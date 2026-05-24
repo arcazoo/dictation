@@ -41,6 +41,7 @@ function buildTutorText(body) {
       instruction:
         'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. Ask one quick question at the end.',
       ...body,
+      contextWords: (body.contextWords || []).slice(0, 40),
     },
     null,
     2,

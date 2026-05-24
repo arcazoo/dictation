@@ -15,6 +15,7 @@ function buildTutorText(body) {
   const word = body.word;
   const stats = body.stats || {};
   const recentMistakes = body.recentMistakes || [];
+  const contextWords = body.contextWords || [];
 
   return JSON.stringify(
     {
@@ -31,6 +32,13 @@ function buildTutorText(body) {
             page: word.page,
           }
         : null,
+      context_title: body.contextTitle || null,
+      context_words: contextWords.slice(0, 40).map((item) => ({
+        russian: item.russian,
+        uzbek: item.uzbek,
+        category: item.category_ru,
+        page: item.page,
+      })),
       learner_stats: {
         learned: stats.learned,
         todayCount: stats.todayCount,

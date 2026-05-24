@@ -17,6 +17,8 @@ export interface TutorRequest {
     streak: number;
   };
   recentMistakes?: Array<Word & { wrong_count: number }>;
+  contextTitle?: string;
+  contextWords?: Word[];
 }
 
 export async function askTutor(payload: TutorRequest) {
