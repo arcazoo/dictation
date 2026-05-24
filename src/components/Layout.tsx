@@ -1,12 +1,12 @@
 import type { PropsWithChildren } from 'react';
 
-export type View = 'today' | 'sections' | 'study' | 'test' | 'errors' | 'stats' | 'settings';
+export type View = 'today' | 'sections' | 'study' | 'test' | 'ai' | 'errors' | 'stats' | 'settings';
 
 const navItems: Array<{ id: View; label: string; short: string; icon: string }> = [
   { id: 'today', label: 'Bugun', short: 'Bugun', icon: '●' },
   { id: 'sections', label: 'Listlar', short: 'List', icon: '▤' },
+  { id: 'ai', label: 'AI Tutor', short: 'AI', icon: 'AI' },
   { id: 'test', label: 'Test', short: 'Test', icon: '?' },
-  { id: 'errors', label: 'Xatolar', short: 'Xato', icon: '!' },
   { id: 'settings', label: 'Settings', short: 'Sozla', icon: '*' },
 ];
 
@@ -37,6 +37,16 @@ export function Layout({
                 {item.label}
               </button>
             ))}
+            <button
+              onClick={() => setView('errors')}
+              className={`w-full rounded-lg px-4 py-3 text-left text-sm font-semibold transition ${
+                view === 'errors'
+                  ? 'bg-brand-600 text-white'
+                  : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+              }`}
+            >
+              Xatolar
+            </button>
             <button
               onClick={() => setView('stats')}
               className={`w-full rounded-lg px-4 py-3 text-left text-sm font-semibold transition ${

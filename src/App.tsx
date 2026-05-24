@@ -8,9 +8,10 @@ import { StatsPage } from './pages/StatsPage';
 import { StudyPage } from './pages/StudyPage';
 import { TestPage } from './pages/TestPage';
 import { TodayPage } from './pages/TodayPage';
+import { TutorPage } from './pages/TutorPage';
 import type { StudySource } from './types';
 
-const views: View[] = ['today', 'sections', 'study', 'test', 'errors', 'stats', 'settings'];
+const views: View[] = ['today', 'sections', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
 
 function getHashView(): View {
   const hash = window.location.hash.replace('#', '') as View;
@@ -91,6 +92,7 @@ export default function App() {
           reviewWord={data.reviewWord}
         />
       ) : null}
+      {view === 'ai' ? <TutorPage words={data.words} progress={data.progress} stats={data.stats} /> : null}
       {view === 'errors' ? (
         <ErrorsPage
           words={data.words}

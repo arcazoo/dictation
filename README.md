@@ -37,6 +37,7 @@ Vercel productionda `server/index.mjs` ishlatilmaydi. Uning o'rniga `api/` ichid
 
 - `api/health.js`
 - `api/backup.js`
+- `api/tutor.js`
 
 Vercel dashboardda quyidagi Environment Variables qo'shiladi:
 
@@ -45,6 +46,8 @@ FIREBASE_PROJECT_ID=your-firebase-project-id
 FIREBASE_API_KEY=your-firebase-web-api-key
 FIREBASE_BACKUP_COLLECTION=ruschaTezBackups
 FIREBASE_BACKUP_DOCUMENT=default
+OPENAI_API_KEY=sk-your-openai-api-key
+OPENAI_MODEL=gpt-5.2
 ```
 
 Firestore rules MVP uchun read/write ruxsat berishi kerak. Real foydalanuvchilar uchun login va auth rules qo'shish kerak bo'ladi.
