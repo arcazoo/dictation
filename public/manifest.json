@@ -1,0 +1,20 @@
+{
+  "name": "Ruscha Tez",
+  "short_name": "Ruscha Tez",
+  "description": "Ruscha-o'zbekcha so'zlarni tez yodlash uchun offline PWA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#0D9488",
+  "lang": "uz",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
