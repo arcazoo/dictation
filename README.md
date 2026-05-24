@@ -18,6 +18,37 @@ npm run import:pdf
 npm run dev
 ```
 
+Production build va oddiy server:
+
+```bash
+npm run build
+npm run server
+```
+
+Server `http://127.0.0.1:4173` da ishlaydi:
+
+- `GET /api/health`
+- `GET /api/backup`
+- `POST /api/backup`
+
+## Vercel serverless
+
+Vercel productionda `server/index.mjs` ishlatilmaydi. Uning o'rniga `api/` ichidagi serverless funksiyalar ishlaydi:
+
+- `api/health.js`
+- `api/backup.js`
+
+Vercel dashboardda quyidagi Environment Variables qo'shiladi:
+
+```text
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_API_KEY=your-firebase-web-api-key
+FIREBASE_BACKUP_COLLECTION=ruschaTezBackups
+FIREBASE_BACKUP_DOCUMENT=default
+```
+
+Firestore rules MVP uchun read/write ruxsat berishi kerak. Real foydalanuvchilar uchun login va auth rules qo'shish kerak bo'ladi.
+
 `npm run import:pdf` quyidagi PDFlardan so'zlarni chiqarib `src/data/seedWords.ts` va `public/words.json` fayllarini yaratadi:
 
 - `C:/Users/Ikhti/Downloads/Telegram Desktop/имя_существительное_1000(1)(1)(1) (2).pdf`
@@ -65,6 +96,7 @@ SRS level algoritmi:
 ## MVP ekranlari
 
 - Bugungi dars
+- List tanlash: kategoriya, varaq, xato so'zlar
 - Bo'limlar va varaq statuslari
 - Flashcard
 - 4 variantli test

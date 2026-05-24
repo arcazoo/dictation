@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
 import type { ImportPayload } from '../db/indexedDb';
+import { loadBackupFromServer, saveBackupToServer } from '../lib/serverSync';
 import type { Settings } from '../types';
 
 export function SettingsPage({
@@ -25,6 +26,7 @@ export function SettingsPage({
   reload: () => Promise<void>;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [serverStatus, setServerStatus] = useState('');
 
   const patch = (next: Partial<Settings>) => updateSettings({ ...settings, ...next });
 
@@ -43,6 +45,29 @@ export function SettingsPage({
     const payload = JSON.parse(await file.text());
     await importData(payload);
     await reload();
+  }
+
+  async function backupToServer() {
+    try {
+      setServerStatus('Serverga yuborilmoqda...');
+      const payload = await exportData();
+      const result = await saveBackupToServer(payload);
+      setServerStatus(result.ok ? `Backup saqlandi: ${new Date(result.saved_at).toLocaleString()}` : 'Backup saqlanmadi');
+    } catch {
+      setServerStatus('Server topilmadi. Avval npm run server ishga tushiring.');
+    }
+  }
+
+  async function restoreFromServer() {
+    try {
+      setServerStatus('Serverdan olinmoqda...');
+      const payload = await loadBackupFromServer();
+      await importData(payload);
+      await reload();
+      setServerStatus('Server backup yuklandi');
+    } catch {
+      setServerStatus('Server backup topilmadi.');
+    }
   }
 
   return (
@@ -121,10 +146,13 @@ export function SettingsPage({
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Button onClick={downloadExport}>JSON eksport</Button>
             <Button variant="secondary" onClick={() => fileRef.current?.click()}>JSON import</Button>
+            <Button variant="secondary" onClick={backupToServer}>Server backup</Button>
+            <Button variant="secondary" onClick={restoreFromServer}>Serverdan yuklash</Button>
             <Button variant="secondary" onClick={async () => { await clearMistakes(); await reload(); }}>Xatolarni tozalash</Button>
             <Button variant="danger" onClick={async () => { await clearProgress(); await reload(); }}>Progressni tozalash</Button>
             <Button variant="ghost" onClick={async () => { await resetSettings(); await reload(); }}>Settings reset</Button>
           </div>
+          {serverStatus ? <p className="mt-3 text-sm font-bold text-brand-600">{serverStatus}</p> : null}
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(event) => importFile(event.target.files?.[0])} />
         </Card>
       </section>

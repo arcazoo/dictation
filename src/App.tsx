@@ -8,6 +8,7 @@ import { StatsPage } from './pages/StatsPage';
 import { StudyPage } from './pages/StudyPage';
 import { TestPage } from './pages/TestPage';
 import { TodayPage } from './pages/TodayPage';
+import type { StudySource } from './types';
 
 const views: View[] = ['today', 'sections', 'study', 'test', 'errors', 'stats', 'settings'];
 
@@ -19,7 +20,8 @@ function getHashView(): View {
 export default function App() {
   const data = useAppData();
   const [view, setViewState] = useState<View>(getHashView());
-  const [mistakesOnly, setMistakesOnly] = useState(false);
+  const [studySource, setStudySource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
+  const [testSource, setTestSource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
 
   useEffect(() => {
     const onHash = () => setViewState(getHashView());
@@ -30,7 +32,16 @@ export default function App() {
   const setView = (next: View) => {
     window.location.hash = next;
     setViewState(next);
-    if (next !== 'study') setMistakesOnly(false);
+  };
+
+  const startStudy = (source: StudySource) => {
+    setStudySource(source);
+    setView('study');
+  };
+
+  const startTest = (source: StudySource) => {
+    setTestSource(source);
+    setView('test');
   };
 
   if (data.loading || !data.settings.appearance) {
@@ -54,29 +65,37 @@ export default function App() {
           learned={data.stats.learned}
           accuracy={data.stats.accuracy}
           setView={setView}
+          startStudy={startStudy}
+          startTest={startTest}
         />
       ) : null}
-      {view === 'sections' ? <SectionsPage words={data.words} progress={data.progress} /> : null}
+      {view === 'sections' ? (
+        <SectionsPage words={data.words} progress={data.progress} startStudy={startStudy} startTest={startTest} />
+      ) : null}
       {view === 'study' ? (
         <StudyPage
           words={data.words}
           progress={data.progress}
           settings={data.settings}
-          mistakesOnly={mistakesOnly}
+          source={studySource}
           reviewWord={data.reviewWord}
         />
       ) : null}
       {view === 'test' ? (
-        <TestPage words={data.words} progress={data.progress} settings={data.settings} reviewWord={data.reviewWord} />
+        <TestPage
+          words={data.words}
+          progress={data.progress}
+          settings={data.settings}
+          source={testSource}
+          setSource={setTestSource}
+          reviewWord={data.reviewWord}
+        />
       ) : null}
       {view === 'errors' ? (
         <ErrorsPage
           words={data.words}
           progress={data.progress}
-          startMistakes={() => {
-            setMistakesOnly(true);
-            setView('study');
-          }}
+          startMistakes={() => startStudy({ kind: 'mistakes', title: "Xato so'zlar" })}
         />
       ) : null}
       {view === 'stats' ? <StatsPage words={data.words} progress={data.progress} stats={data.stats} /> : null}

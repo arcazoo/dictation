@@ -2,36 +2,91 @@ import { useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
+import { CATEGORIES } from '../data/categories';
 import { answerLabel, gradeWrittenAnswer } from '../lib/answer';
-import { getChoices, getTodayLesson } from '../lib/lesson';
-import type { AnswerQuality, Settings, UserProgress, Word } from '../types';
+import { getChoices } from '../lib/lesson';
+import { getWordsForSource } from '../lib/source';
+import type { AnswerQuality, Category, Settings, StudySource, UserProgress, Word } from '../types';
 
 export function TestPage({
   words,
   progress,
   settings,
+  source,
+  setSource,
   reviewWord,
 }: {
   words: Word[];
   progress: Record<string, UserProgress>;
   settings: Settings;
+  source: StudySource;
+  setSource: (source: StudySource) => void;
   reviewWord: (word: Word, result: AnswerQuality, mode: 'multipleChoice' | 'written') => Promise<void>;
 }) {
   const [mode, setMode] = useState<'choice' | 'written'>('choice');
-  const [onlyMistakes, setOnlyMistakes] = useState(settings.testTypes.onlyMistakes);
   const queue = useMemo(() => {
-    const base = onlyMistakes ? words.filter((word) => (progress[word.id]?.wrong_count ?? 0) > 0) : getTodayLesson(words, progress, settings);
-    return base.length ? base : words;
-  }, [onlyMistakes, progress, settings, words]);
+    const selected = getWordsForSource(source, words, progress, settings);
+    return selected.length ? selected : words;
+  }, [progress, settings, source, words]);
 
   return (
     <>
-      <PageHeader title="Test" subtitle="4 variantli test va yozma recall bir ekranda." />
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button variant={mode === 'choice' ? 'primary' : 'secondary'} onClick={() => setMode('choice')}>4 variant</Button>
-        <Button variant={mode === 'written' ? 'primary' : 'secondary'} onClick={() => setMode('written')}>Yozma javob</Button>
-        <Button variant={onlyMistakes ? 'danger' : 'ghost'} onClick={() => setOnlyMistakes((value) => !value)}>Faqat xatolar</Button>
-      </div>
+      <PageHeader title="Test" subtitle={`${source.title} · 4 variantli test yoki yozma recall.`} />
+      <Card className="mb-4">
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+          <label className="text-sm font-bold">
+            List
+            <select
+              value={source.kind === 'category' ? source.category : source.kind}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (value === 'today') setSource({ kind: 'today', title: 'Bugungi test' });
+                else if (value === 'mistakes') setSource({ kind: 'mistakes', title: "Xato so'zlar testi" });
+                else setSource({ kind: 'category', title: CATEGORIES.find((item) => item.id === value)?.title ?? value, category: value as Category });
+              }}
+              className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 dark:border-slate-700 dark:bg-slate-950"
+            >
+              <option value="today">Bugungi dars</option>
+              <option value="mistakes">Xato so'zlar</option>
+              {CATEGORIES.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-bold">
+            Varaq
+            <select
+              value={source.kind === 'page' ? `${source.category}:${source.page}` : 'all'}
+              onChange={(event) => {
+                if (event.target.value === 'all') return;
+                const [category, page] = event.target.value.split(':') as [Category, string];
+                const meta = CATEGORIES.find((item) => item.id === category);
+                setSource({ kind: 'page', title: `${meta?.title ?? category} · ${page}-varaq testi`, category, page: Number(page) });
+              }}
+              className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 dark:border-slate-700 dark:bg-slate-950"
+            >
+              <option value="all">Hammasi</option>
+              {CATEGORIES.flatMap((category) =>
+                [...new Set(words.filter((word) => word.category === category.id).map((word) => word.page))].map((page) => (
+                  <option key={`${category.id}:${page}`} value={`${category.id}:${page}`}>
+                    {category.title} · {page}-varaq
+                  </option>
+                )),
+              )}
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-2 sm:self-end">
+            <Button variant={mode === 'choice' ? 'primary' : 'secondary'} onClick={() => setMode('choice')}>
+              4 variant
+            </Button>
+            <Button variant={mode === 'written' ? 'primary' : 'secondary'} onClick={() => setMode('written')}>
+              Yozma
+            </Button>
+          </div>
+        </div>
+      </Card>
       {mode === 'choice' ? (
         <ChoiceTest words={words} queue={queue} reverse={settings.testTypes.reverseTranslation} reviewWord={reviewWord} />
       ) : (
@@ -74,9 +129,7 @@ function ChoiceTest({
   return (
     <Card className="mx-auto max-w-2xl">
       <p className="text-sm font-bold text-brand-600">{word.category_ru}</p>
-      <h2 className="mt-3 text-2xl font-black">
-        {reverse ? `${word.uzbek} rus tilida qanday?` : `${word.russian} nimani anglatadi?`}
-      </h2>
+      <h2 className="mt-3 text-2xl font-black">{reverse ? `${word.uzbek} rus tilida qanday?` : `${word.russian} nimani anglatadi?`}</h2>
       <div className="mt-5 grid gap-3">
         {choices.map((choice, choiceIndex) => {
           const isAnswer = choice === answer;
@@ -149,8 +202,12 @@ function WrittenTest({
         </div>
       ) : null}
       <div className="mt-4 flex gap-3">
-        <Button onClick={check} disabled={!!result}>Tekshirish</Button>
-        <Button variant="secondary" onClick={next}>Keyingisi</Button>
+        <Button onClick={check} disabled={!!result}>
+          Tekshirish
+        </Button>
+        <Button variant="secondary" onClick={next}>
+          Keyingisi
+        </Button>
       </div>
     </Card>
   );

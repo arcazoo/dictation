@@ -1,0 +1,8 @@
+export default function handler(_request, response) {
+  response.status(200).json({
+    ok: true,
+    app: 'Ruscha Tez',
+    runtime: 'vercel-serverless',
+    time: new Date().toISOString(),
+  });
+}

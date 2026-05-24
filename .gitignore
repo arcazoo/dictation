@@ -1,0 +1,4 @@
+node_modules/
+vite.out.log
+vite.err.log
+server/data/*.json

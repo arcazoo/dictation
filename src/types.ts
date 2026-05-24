@@ -81,3 +81,10 @@ export interface CategoryMeta {
   subtitle: string;
   planKey: keyof Settings['dailyPlan'];
 }
+
+export type StudySource =
+  | { kind: 'today'; title: string }
+  | { kind: 'mistakes'; title: string }
+  | { kind: 'category'; title: string; category: Category }
+  | { kind: 'page'; title: string; category: Category; page: number }
+  | { kind: 'custom'; title: string; ids: string[] };

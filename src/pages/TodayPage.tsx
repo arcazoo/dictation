@@ -4,7 +4,7 @@ import { PageHeader } from '../components/PageHeader';
 import { StatTile } from '../components/StatTile';
 import { CATEGORIES } from '../data/categories';
 import { getCategoryProgress, getDueWords, getTodayLesson } from '../lib/lesson';
-import type { Settings, UserProgress, Word } from '../types';
+import type { Settings, StudySource, UserProgress, Word } from '../types';
 
 export function TodayPage({
   words,
@@ -13,6 +13,8 @@ export function TodayPage({
   learned,
   accuracy,
   setView,
+  startStudy,
+  startTest,
 }: {
   words: Word[];
   progress: Record<string, UserProgress>;
@@ -20,6 +22,8 @@ export function TodayPage({
   learned: number;
   accuracy: number;
   setView: (view: 'study' | 'sections') => void;
+  startStudy: (source: StudySource) => void;
+  startTest: (source: StudySource) => void;
 }) {
   const due = getDueWords(words, progress, settings.dailyReviewLimit);
   const lesson = getTodayLesson(words, progress, settings);
@@ -30,23 +34,33 @@ export function TodayPage({
     <>
       <PageHeader title="Bugungi dars" subtitle="Yangi so'zlar, eski takrorlashlar va qiyin so'zlar bir joyda." />
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid grid-cols-3 gap-2 sm:gap-3">
         <StatTile label="Bugungi progress" value={`${percent}%`} />
         <StatTile label="Takrorlash kerak" value={due.length} />
         <StatTile label="To'g'ri javoblar" value={`${accuracy}%`} />
       </section>
 
-      <Card className="mt-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <Card className="mt-3 sm:mt-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-black">Kunlik reja</h2>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               {lesson.length} ta so'z tayyor. Umumiy o'rganilgan: {learned}.
             </p>
           </div>
-          <Button onClick={() => setView('study')}>Boshlash</Button>
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Button onClick={() => startStudy({ kind: 'today', title: 'Bugungi dars' })}>Boshlash</Button>
+            <Button variant="secondary" onClick={() => startTest({ kind: 'today', title: 'Bugungi test' })}>Test</Button>
+          </div>
         </div>
       </Card>
+
+      <section className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Button variant="secondary" onClick={() => setView('sections')}>List tanlash</Button>
+        <Button variant="secondary" onClick={() => startStudy({ kind: 'mistakes', title: "Xato so'zlar" })}>Xatolar</Button>
+        <Button variant="ghost" onClick={() => startStudy({ kind: 'category', title: 'Otlar', category: 'noun' })}>Otlar</Button>
+        <Button variant="ghost" onClick={() => startStudy({ kind: 'category', title: 'Fe’llar', category: 'verb' })}>Fe'llar</Button>
+      </section>
 
       <section className="mt-4 grid gap-3 lg:grid-cols-3">
         {CATEGORIES.map((category) => (
