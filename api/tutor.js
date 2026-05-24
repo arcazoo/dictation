@@ -16,14 +16,19 @@ function buildTutorText(body) {
   const stats = body.stats || {};
   const recentMistakes = body.recentMistakes || [];
   const contextWords = body.contextWords || [];
+  const history = body.history || [];
 
   return JSON.stringify(
     {
       role: 'Ruscha Tez AI Tutor',
       instruction:
-        'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. Ask one quick question at the end.',
+        'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. Important: if the user message is an answer to your previous quiz question, check it first. Say Togri or Notogri, briefly explain, then ask the next question from context_words. Do not restart the whole lesson after every answer.',
       mode: body.mode || 'chat',
       user_message: body.message,
+      conversation_history: history.slice(-10).map((item) => ({
+        role: item.role,
+        text: item.text,
+      })),
       active_word: word
         ? {
             russian: word.russian,
@@ -50,7 +55,8 @@ function buildTutorText(body) {
         uzbek: item.uzbek,
         wrong_count: item.wrong_count,
       })),
-      answer_format: '1 short explanation, 2 simple examples if useful, 1 quick question.',
+      answer_format:
+        'If this is a quiz answer: verdict, correction if needed, next question. Otherwise: 1 short explanation, 2 simple examples if useful, 1 quick question.',
     },
     null,
     2,

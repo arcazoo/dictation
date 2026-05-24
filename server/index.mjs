@@ -39,9 +39,10 @@ function buildTutorText(body) {
     {
       role: 'Ruscha Tez AI Tutor',
       instruction:
-        'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. Ask one quick question at the end.',
+        'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. If the user message is an answer to your previous quiz question, check it first, then ask the next question. Do not restart the whole lesson after every answer.',
       ...body,
       contextWords: (body.contextWords || []).slice(0, 40),
+      history: (body.history || []).slice(-10),
     },
     null,
     2,

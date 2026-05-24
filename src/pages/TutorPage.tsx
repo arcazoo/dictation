@@ -83,6 +83,7 @@ export function TutorPage({
         stats,
         contextTitle: context.title,
         contextWords: contextWords.slice(0, 40),
+        history: messages.slice(-10),
         recentMistakes: stats.hardWords.map((word) => ({
           ...word,
           wrong_count: progress[word.id]?.wrong_count ?? 0,
