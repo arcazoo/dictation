@@ -9,8 +9,8 @@ const distDir = path.join(root, 'dist');
 const dataDir = path.join(__dirname, 'data');
 const backupFile = path.join(dataDir, 'progress-backup.json');
 const port = Number(process.env.PORT || 4173);
-const openaiApiKey = process.env.OPENAI_API_KEY;
-const openaiModel = process.env.OPENAI_MODEL || 'gpt-5.2';
+const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -30,38 +30,54 @@ async function readBody(request) {
 }
 
 function tutorFallback(body) {
-  const word = body?.word?.russian ? `${body.word.russian} - ${body.word.uzbek}` : 'tanlangan so‘z';
-  return `Offline tutor rejimi.\n\nFokus: ${word}\n\nSavol: ${body?.message || body?.mode}\n\nMashq: ruscha so‘zni ayting, tarjimasini yoping, keyin o‘zingiz yozib ko‘ring.`;
+  const word = body?.word?.russian ? `${body.word.russian} - ${body.word.uzbek}` : 'tanlangan soz';
+  return `Offline tutor rejimi.\n\nFokus: ${word}\n\nSavol: ${body?.message || body?.mode}\n\nMashq: ruscha sozni ayting, tarjimasini yoping, keyin ozingiz yozib koring.`;
 }
 
-async function askOpenAiTutor(body) {
-  if (!openaiApiKey) return { ok: true, fallback: true, answer: tutorFallback(body) };
+function buildTutorText(body) {
+  return JSON.stringify(
+    {
+      role: 'Ruscha Tez AI Tutor',
+      instruction:
+        'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. Ask one quick question at the end.',
+      ...body,
+    },
+    null,
+    2,
+  );
+}
 
-  const result = await fetch('https://api.openai.com/v1/responses', {
+function readGeminiText(data) {
+  return (
+    data?.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || '')
+      .join('')
+      .trim() || ''
+  );
+}
+
+async function askGeminiTutor(body) {
+  if (!geminiApiKey) return { ok: true, fallback: true, provider: 'offline', answer: tutorFallback(body) };
+
+  const result = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${openaiApiKey}`,
       'Content-Type': 'application/json',
+      'x-goog-api-key': geminiApiKey,
     },
     body: JSON.stringify({
-      model: openaiModel,
-      input: [
-        {
-          role: 'developer',
-          content:
-            'You are Ruscha Tez AI Tutor. Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin by default. Be short, practical, mobile-friendly, and quiz the learner.',
-        },
+      contents: [
         {
           role: 'user',
-          content: JSON.stringify(body, null, 2),
+          parts: [{ text: buildTutorText(body) }],
         },
       ],
     }),
   });
 
-  if (!result.ok) return { ok: false, error: await result.text() };
+  if (!result.ok) return { ok: false, provider: 'gemini', error: await result.text() };
   const data = await result.json();
-  return { ok: true, answer: data.output_text || 'AI javob bo‘sh qaytdi.' };
+  return { ok: true, provider: 'gemini', model: geminiModel, answer: readGeminiText(data) || 'AI javob bosh qaytdi.' };
 }
 
 function send(response, status, payload) {
@@ -128,7 +144,7 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === '/api/tutor' && request.method === 'POST') {
       const payload = await readBody(request);
-      const answer = await askOpenAiTutor(payload);
+      const answer = await askGeminiTutor(payload);
       send(response, answer.ok ? 200 : 500, answer);
       return;
     }

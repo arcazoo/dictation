@@ -1,61 +1,61 @@
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 function fallbackReply(message, word) {
-  const activeWord = word?.russian ? `${word.russian} - ${word.uzbek}` : 'tanlangan so‘z';
+  const activeWord = word?.russian ? `${word.russian} - ${word.uzbek}` : 'tanlangan soz';
   return [
-    `Men hozir offline tutor rejimidaman. OpenAI kaliti qo‘yilgach to‘liq AI javob beraman.`,
+    'Men hozir offline tutor rejimidaman. GEMINI_API_KEY qoyilgach toliq AI javob beraman.',
     `Hozirgi fokus: ${activeWord}.`,
     `Savolingiz: ${message}`,
-    `Mashq: ruscha so‘zni 3 marta ovoz chiqarib ayting, keyin tarjimasini yozib ko‘ring.`,
+    'Mashq: ruscha sozni 3 marta ovoz chiqarib ayting, keyin tarjimasini yozib koring.',
   ].join('\n\n');
 }
 
-function buildPrompt(body) {
+function buildTutorText(body) {
   const word = body.word;
   const stats = body.stats || {};
   const recentMistakes = body.recentMistakes || [];
-  const mode = body.mode || 'chat';
 
-  return [
+  return JSON.stringify(
     {
-      role: 'developer',
-      content:
-        'You are Ruscha Tez AI Tutor. Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin by default. Be short, practical, mobile-friendly, and quiz the learner. Use simple Russian examples with Uzbek translations. Do not invent progress data.',
+      role: 'Ruscha Tez AI Tutor',
+      instruction:
+        'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. Ask one quick question at the end.',
+      mode: body.mode || 'chat',
+      user_message: body.message,
+      active_word: word
+        ? {
+            russian: word.russian,
+            uzbek: word.uzbek,
+            category: word.category_ru,
+            page: word.page,
+          }
+        : null,
+      learner_stats: {
+        learned: stats.learned,
+        todayCount: stats.todayCount,
+        accuracy: stats.accuracy,
+        streak: stats.streak,
+      },
+      recent_mistakes: recentMistakes.slice(0, 8).map((item) => ({
+        russian: item.russian,
+        uzbek: item.uzbek,
+        wrong_count: item.wrong_count,
+      })),
+      answer_format: '1 short explanation, 2 simple examples if useful, 1 quick question.',
     },
-    {
-      role: 'user',
-      content: JSON.stringify(
-        {
-          mode,
-          user_message: body.message,
-          active_word: word
-            ? {
-                russian: word.russian,
-                uzbek: word.uzbek,
-                category: word.category_ru,
-                page: word.page,
-              }
-            : null,
-          learner_stats: {
-            learned: stats.learned,
-            todayCount: stats.todayCount,
-            accuracy: stats.accuracy,
-            streak: stats.streak,
-          },
-          recent_mistakes: recentMistakes.slice(0, 8).map((item) => ({
-            russian: item.russian,
-            uzbek: item.uzbek,
-            wrong_count: item.wrong_count,
-          })),
-          answer_format:
-            'Return helpful tutoring text. If useful, include: 1 short explanation, 2 example sentences, 1 quick question for the learner.',
-        },
-        null,
-        2,
-      ),
-    },
-  ];
+    null,
+    2,
+  );
+}
+
+function readGeminiText(data) {
+  return (
+    data?.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || '')
+      .join('')
+      .trim() || ''
+  );
 }
 
 export default async function handler(request, response) {
@@ -71,42 +71,50 @@ export default async function handler(request, response) {
     return;
   }
 
-  if (!OPENAI_API_KEY) {
+  if (!GEMINI_API_KEY) {
     response.status(200).json({
       ok: true,
       fallback: true,
+      provider: 'offline',
       answer: fallbackReply(body.message || body.mode, body.word),
     });
     return;
   }
 
   try {
-    const result = await fetch('https://api.openai.com/v1/responses', {
+    const result = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY,
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
-        input: buildPrompt(body),
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: buildTutorText(body) }],
+          },
+        ],
       }),
     });
 
     if (!result.ok) {
-      response.status(result.status).json({ ok: false, error: await result.text() });
+      response.status(result.status).json({ ok: false, provider: 'gemini', error: await result.text() });
       return;
     }
 
     const data = await result.json();
     response.status(200).json({
       ok: true,
-      answer: data.output_text || 'Javob tayyor, lekin matn bo‘sh qaytdi.',
+      provider: 'gemini',
+      model: GEMINI_MODEL,
+      answer: readGeminiText(data) || 'Javob tayyor, lekin matn bosh qaytdi.',
     });
   } catch (error) {
     response.status(500).json({
       ok: false,
-      error: error instanceof Error ? error.message : 'AI tutor failed',
+      provider: 'gemini',
+      error: error instanceof Error ? error.message : 'Gemini tutor failed',
     });
   }
 }
