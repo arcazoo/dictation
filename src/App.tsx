@@ -92,7 +92,17 @@ export default function App() {
           reviewWord={data.reviewWord}
         />
       ) : null}
-      {view === 'ai' ? <TutorPage words={data.words} progress={data.progress} settings={data.settings} stats={data.stats} /> : null}
+      {view === 'ai' ? (
+        <TutorPage
+          words={data.words}
+          progress={data.progress}
+          settings={data.settings}
+          stats={data.stats}
+          savedMessages={data.tutorMessages}
+          addTutorMessage={data.addTutorMessage}
+          clearTutorChat={data.clearTutorChat}
+        />
+      ) : null}
       {view === 'errors' ? (
         <ErrorsPage
           words={data.words}

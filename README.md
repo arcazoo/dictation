@@ -7,7 +7,7 @@ Ruscha Tez - ruscha-o'zbekcha so'zlarni active recall, spaced repetition, xato a
 - React + Vite + TypeScript
 - Tailwind CSS
 - IndexedDB offline database
-- Custom service worker + `manifest.json`
+- `manifest.json` install metadata
 - PDF import script: `scripts/import-pdfs.mjs`
 
 ## Ishga tushirish
@@ -72,7 +72,6 @@ src/
   pages/           Home, Sections, Study, Test, Errors, Stats, Settings
 public/
   manifest.json
-  sw.js
   icon.svg
 scripts/
   import-pdfs.mjs

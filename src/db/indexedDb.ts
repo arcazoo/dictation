@@ -1,17 +1,18 @@
 import { DEFAULT_SETTINGS } from '../data/defaultSettings';
 import { SEED_WORDS } from '../data/seedWords';
-import type { ReviewEvent, Settings, UserProgress, Word } from '../types';
+import type { ReviewEvent, Settings, TutorChatMessage, UserProgress, Word } from '../types';
 
 const DB_NAME = 'ruscha-tez-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-type StoreName = 'words' | 'progress' | 'settings' | 'events';
+type StoreName = 'words' | 'progress' | 'settings' | 'events' | 'tutorMessages';
 
 export interface ImportPayload {
   words?: Word[];
   progress?: UserProgress[];
   settings?: Settings;
   events?: ReviewEvent[];
+  tutorMessages?: TutorChatMessage[];
 }
 
 function requestToPromise<T>(request: IDBRequest<T>) {
@@ -42,6 +43,10 @@ function openDb() {
         const events = db.createObjectStore('events', { keyPath: 'id' });
         events.createIndex('created_at', 'created_at');
         events.createIndex('word_id', 'word_id');
+      }
+      if (!db.objectStoreNames.contains('tutorMessages')) {
+        const tutorMessages = db.createObjectStore('tutorMessages', { keyPath: 'id' });
+        tutorMessages.createIndex('created_at', 'created_at');
       }
     };
 
@@ -152,14 +157,44 @@ export async function addEvent(event: ReviewEvent) {
   });
 }
 
+export async function getTutorMessages() {
+  return withStore<TutorChatMessage[]>('tutorMessages', 'readonly', (store) =>
+    requestToPromise(store.getAll() as IDBRequest<TutorChatMessage[]>),
+  );
+}
+
+export async function saveTutorMessage(message: TutorChatMessage) {
+  await withStore('tutorMessages', 'readwrite', (store) => {
+    store.put(message);
+  });
+}
+
+export async function replaceTutorMessages(messages: TutorChatMessage[]) {
+  await withStore('tutorMessages', 'readwrite', async (store) => {
+    await requestToPromise(store.clear());
+    for (const message of messages) store.put(message);
+  });
+}
+
+export async function clearTutorMessages() {
+  await withStore('tutorMessages', 'readwrite', (store) => requestToPromise(store.clear()));
+}
+
 export async function exportData() {
-  const [words, progress, settings, events] = await Promise.all([getWords(), getProgress(), getSettings(), getEvents()]);
+  const [words, progress, settings, events, tutorMessages] = await Promise.all([
+    getWords(),
+    getProgress(),
+    getSettings(),
+    getEvents(),
+    getTutorMessages(),
+  ]);
   return {
     exported_at: new Date().toISOString(),
     words,
     progress: Object.values(progress),
     settings,
     events,
+    tutorMessages,
   };
 }
 
@@ -178,4 +213,5 @@ export async function importData(payload: ImportPayload) {
       for (const item of payload.events ?? []) store.put(item);
     });
   }
+  if (payload.tutorMessages) await replaceTutorMessages(payload.tutorMessages);
 }

@@ -68,11 +68,19 @@ export interface ReviewEvent {
   created_at: string;
 }
 
+export interface TutorChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  created_at: string;
+}
+
 export interface AppState {
   words: Word[];
   progress: Record<string, UserProgress>;
   settings: Settings;
   events: ReviewEvent[];
+  tutorMessages: TutorChatMessage[];
 }
 
 export interface CategoryMeta {

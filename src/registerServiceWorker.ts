@@ -1,9 +1,14 @@
 export function registerServiceWorker() {
-  if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
+  if (!('serviceWorker' in navigator)) return;
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
-      console.warn('Service worker registration failed', error);
-    });
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+      .then(() => caches.keys())
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+      .catch((error) => {
+        console.warn('Service worker cleanup failed', error);
+      });
   });
 }

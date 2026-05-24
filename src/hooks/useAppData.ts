@@ -2,18 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addEvent,
   clearProgress,
+  clearTutorMessages,
   exportData,
   getEvents,
   getProgress,
   getSettings,
+  getTutorMessages,
   getWords,
   importData,
   resetSettings,
   saveProgress,
   saveSettings,
+  saveTutorMessage,
   seedDatabase,
 } from '../db/indexedDb';
-import type { AnswerQuality, AppState, ReviewEvent, ReviewResult, Settings, Word } from '../types';
+import type { AnswerQuality, AppState, ReviewEvent, ReviewResult, Settings, TutorChatMessage, Word } from '../types';
 import { applyReview } from '../lib/srs';
 import { saveBackupToServer } from '../lib/serverSync';
 
@@ -22,6 +25,7 @@ const initialState: AppState = {
   progress: {},
   settings: {} as Settings,
   events: [],
+  tutorMessages: [],
 };
 
 export function useAppData() {
@@ -46,8 +50,14 @@ export function useAppData() {
   const reload = useCallback(async () => {
     setLoading(true);
     await seedDatabase();
-    const [words, progress, settings, events] = await Promise.all([getWords(), getProgress(), getSettings(), getEvents()]);
-    setState({ words, progress, settings, events });
+    const [words, progress, settings, events, tutorMessages] = await Promise.all([
+      getWords(),
+      getProgress(),
+      getSettings(),
+      getEvents(),
+      getTutorMessages(),
+    ]);
+    setState({ words, progress, settings, events, tutorMessages });
     setLoading(false);
   }, []);
 
@@ -95,6 +105,24 @@ export function useAppData() {
     },
     [state.events, state.progress, state.settings, syncToServer],
   );
+
+  const addTutorMessage = useCallback(async (message: Omit<TutorChatMessage, 'created_at'>) => {
+    const fullMessage: TutorChatMessage = {
+      ...message,
+      created_at: new Date().toISOString(),
+    };
+    await saveTutorMessage(fullMessage);
+    setState((current) => ({
+      ...current,
+      tutorMessages: [...current.tutorMessages, fullMessage].slice(-300),
+    }));
+    return fullMessage;
+  }, []);
+
+  const clearTutorChat = useCallback(async () => {
+    await clearTutorMessages();
+    setState((current) => ({ ...current, tutorMessages: [] }));
+  }, []);
 
   const clearMistakes = useCallback(async () => {
     const nextItems = Object.values(state.progress).map((item) => ({
@@ -177,6 +205,8 @@ export function useAppData() {
     importData,
     clearProgress: clearAllProgress,
     clearMistakes,
+    addTutorMessage,
+    clearTutorChat,
     resetSettings: resetAllSettings,
   };
 }

@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
 import { CATEGORIES } from '../data/categories';
 import { getTodayLesson } from '../lib/lesson';
 import { askTutor, type TutorMessage } from '../lib/tutorApi';
-import type { Category, Settings, UserProgress, Word } from '../types';
+import type { Category, Settings, TutorChatMessage, UserProgress, Word } from '../types';
 
 const quickActions = [
   { label: 'List quiz', mode: 'quiz', text: 'Shu listdagi sozlardan savol-javob qil. Bitta savol ber va javobimni kut.' },
@@ -25,6 +25,9 @@ export function TutorPage({
   progress,
   settings,
   stats,
+  savedMessages,
+  addTutorMessage,
+  clearTutorChat,
 }: {
   words: Word[];
   progress: Record<string, UserProgress>;
@@ -36,6 +39,9 @@ export function TutorPage({
     streak: number;
     hardWords: Word[];
   };
+  savedMessages: TutorChatMessage[];
+  addTutorMessage: (message: Omit<TutorChatMessage, 'created_at'>) => Promise<TutorChatMessage>;
+  clearTutorChat: () => Promise<void>;
 }) {
   const [context, setContext] = useState<TutorContext>({ kind: 'today', title: 'Bugungi dars' });
   const contextWords = useMemo(() => getContextWords(context, words, progress, settings), [context, progress, settings, words]);
@@ -44,13 +50,21 @@ export function TutorPage({
   const activeWord = words.find((word) => word.id === activeWordId) ?? focusWords[0];
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<TutorMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      text: 'Salom. Men Ruscha Tez AI tutoriman. List tanlang, keyin shu list boyicha savol-javob qilamiz.',
-    },
-  ]);
+  const [messages, setMessages] = useState<TutorMessage[]>([]);
+
+  useEffect(() => {
+    setMessages(
+      savedMessages.length
+        ? savedMessages
+        : [
+            {
+              id: 'welcome',
+              role: 'assistant',
+              text: 'Salom. Men Ruscha Tez AI tutoriman. List tanlang, keyin shu list boyicha savol-javob qilamiz.',
+            },
+          ],
+    );
+  }, [savedMessages]);
 
   const pageOptions = useMemo(
     () =>
@@ -71,6 +85,7 @@ export function TutorPage({
       role: 'user',
       text,
     };
+    await addTutorMessage(userMessage);
     setMessages((current) => [...current, userMessage]);
     setInput('');
     setLoading(true);
@@ -89,22 +104,26 @@ export function TutorPage({
           wrong_count: progress[word.id]?.wrong_count ?? 0,
         })),
       });
+      const assistantMessage: TutorMessage = {
+        id: `${Date.now()}-assistant`,
+        role: 'assistant',
+        text: answer.answer,
+      };
+      await addTutorMessage(assistantMessage);
       setMessages((current) => [
         ...current,
-        {
-          id: `${Date.now()}-assistant`,
-          role: 'assistant',
-          text: answer.answer,
-        },
+        assistantMessage,
       ]);
     } catch {
+      const errorMessage: TutorMessage = {
+        id: `${Date.now()}-assistant`,
+        role: 'assistant',
+        text: 'AI tutor hozir javob bera olmadi. Vercel env ichida GEMINI_API_KEY borligini tekshiring.',
+      };
+      await addTutorMessage(errorMessage);
       setMessages((current) => [
         ...current,
-        {
-          id: `${Date.now()}-assistant`,
-          role: 'assistant',
-          text: 'AI tutor hozir javob bera olmadi. Vercel env ichida GEMINI_API_KEY borligini tekshiring.',
-        },
+        errorMessage,
       ]);
     } finally {
       setLoading(false);
@@ -173,6 +192,19 @@ export function TutorPage({
         </div>
 
         <Card className="flex min-h-[70vh] flex-col">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{messages.length} ta xabar saqlangan</p>
+            <Button
+              variant="ghost"
+              className="min-h-10 px-3 py-2 text-xs"
+              onClick={async () => {
+                await clearTutorChat();
+                setMessages([]);
+              }}
+            >
+              Chatni tozalash
+            </Button>
+          </div>
           <div className="flex-1 space-y-3 overflow-y-auto pr-1">
             {messages.map((message) => (
               <div
