@@ -15,6 +15,7 @@ import {
 } from '../db/indexedDb';
 import type { AnswerQuality, AppState, ReviewEvent, ReviewResult, Settings, Word } from '../types';
 import { applyReview } from '../lib/srs';
+import { saveBackupToServer } from '../lib/serverSync';
 
 const initialState: AppState = {
   words: [],
@@ -26,6 +27,21 @@ const initialState: AppState = {
 export function useAppData() {
   const [state, setState] = useState<AppState>(initialState);
   const [loading, setLoading] = useState(true);
+
+  const syncToServer = useCallback(async (snapshot: Pick<AppState, 'progress' | 'settings' | 'events'>) => {
+    if (!navigator.onLine || !snapshot.settings.appearance) return;
+
+    try {
+      await saveBackupToServer({
+        exported_at: new Date().toISOString(),
+        progress: Object.values(snapshot.progress),
+        settings: snapshot.settings,
+        events: snapshot.events.slice(-1000),
+      });
+    } catch (error) {
+      console.warn('Auto backup failed', error);
+    }
+  }, []);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -48,10 +64,14 @@ export function useAppData() {
     root.classList.add(`text-size-${state.settings.appearance?.fontSize ?? 'medium'}`);
   }, [state.settings]);
 
-  const updateSettings = useCallback(async (settings: Settings) => {
-    await saveSettings(settings);
-    setState((current) => ({ ...current, settings }));
-  }, []);
+  const updateSettings = useCallback(
+    async (settings: Settings) => {
+      await saveSettings(settings);
+      setState((current) => ({ ...current, settings }));
+      void syncToServer({ progress: state.progress, settings, events: state.events });
+    },
+    [state.events, state.progress, syncToServer],
+  );
 
   const reviewWord = useCallback(
     async (word: Word, result: ReviewResult | AnswerQuality, mode: ReviewEvent['mode']) => {
@@ -64,13 +84,16 @@ export function useAppData() {
         created_at: new Date().toISOString(),
       };
       await Promise.all([saveProgress(next), addEvent(event)]);
+      const nextProgress = { ...state.progress, [word.id]: next };
+      const nextEvents = [...state.events, event];
       setState((current) => ({
         ...current,
-        progress: { ...current.progress, [word.id]: next },
-        events: [...current.events, event],
+        progress: nextProgress,
+        events: nextEvents,
       }));
+      void syncToServer({ progress: nextProgress, settings: state.settings, events: nextEvents });
     },
-    [state.progress],
+    [state.events, state.progress, state.settings, syncToServer],
   );
 
   const clearMistakes = useCallback(async () => {
@@ -80,11 +103,39 @@ export function useAppData() {
       status: item.status === 'difficult' ? 'learning' : item.status,
     }));
     await Promise.all(nextItems.map((item) => saveProgress(item)));
+    const nextProgress = Object.fromEntries(nextItems.map((item) => [item.word_id, item]));
     setState((current) => ({
       ...current,
-      progress: Object.fromEntries(nextItems.map((item) => [item.word_id, item])),
+      progress: nextProgress,
     }));
-  }, [state.progress]);
+    void syncToServer({ progress: nextProgress, settings: state.settings, events: state.events });
+  }, [state.events, state.progress, state.settings, syncToServer]);
+
+  const clearAllProgress = useCallback(async () => {
+    await clearProgress();
+    setState((current) => ({ ...current, progress: {}, events: [] }));
+    void syncToServer({ progress: {}, settings: state.settings, events: [] });
+  }, [state.settings, syncToServer]);
+
+  const resetAllSettings = useCallback(async () => {
+    const settings = await resetSettings();
+    setState((current) => ({ ...current, settings }));
+    void syncToServer({ progress: state.progress, settings, events: state.events });
+    return settings;
+  }, [state.events, state.progress, syncToServer]);
+
+  useEffect(() => {
+    const syncCurrent = () => {
+      void syncToServer({
+        progress: state.progress,
+        settings: state.settings,
+        events: state.events,
+      });
+    };
+
+    window.addEventListener('online', syncCurrent);
+    return () => window.removeEventListener('online', syncCurrent);
+  }, [state.events, state.progress, state.settings, syncToServer]);
 
   const stats = useMemo(() => {
     const progressValues = Object.values(state.progress);
@@ -124,8 +175,8 @@ export function useAppData() {
     updateSettings,
     exportData,
     importData,
-    clearProgress,
+    clearProgress: clearAllProgress,
     clearMistakes,
-    resetSettings,
+    resetSettings: resetAllSettings,
   };
 }

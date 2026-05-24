@@ -8,7 +8,7 @@ function compactPayload(payload) {
     exported_at: payload?.exported_at || new Date().toISOString(),
     progress: payload?.progress || [],
     settings: payload?.settings || null,
-    events: payload?.events || [],
+    events: (payload?.events || []).slice(-1000),
   };
 }
 

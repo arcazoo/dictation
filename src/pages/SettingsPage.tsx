@@ -143,6 +143,9 @@ export function SettingsPage({
 
         <Card>
           <h2 className="text-lg font-black">Progress boshqaruvi</h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Auto backup yoqilgan: har bir javobdan keyin progress serverga yuboriladi.
+          </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Button onClick={downloadExport}>JSON eksport</Button>
             <Button variant="secondary" onClick={() => fileRef.current?.click()}>JSON import</Button>
