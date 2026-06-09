@@ -31,6 +31,7 @@ export type AiCoachMode =
   | 'audioConversation'
   | 'strictMotivator';
 export type CoachTone = 'kind' | 'normal' | 'strict' | 'funnyStrict';
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'offline' | 'error';
 
 export interface Word {
   id: string;

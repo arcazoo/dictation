@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   addEvent,
   clearProgress,
@@ -37,11 +37,12 @@ import type {
   ReviewResult,
   Settings,
   SpeakingAttempt,
+  SyncStatus,
   TutorChatMessage,
   Word,
 } from '../types';
 import { applyReview } from '../lib/srs';
-import { saveBackupToServer } from '../lib/serverSync';
+import { loadBackupFromServer, saveBackupToServer } from '../lib/serverSync';
 import {
   achievementsForState,
   makeExerciseResult,
@@ -76,61 +77,114 @@ const initialState: AppState = {
   speakingAttempts: [],
 };
 
+function latestLocalTime(state: AppState) {
+  const dates = [
+    ...state.events.map((item) => item.created_at),
+    ...state.tutorMessages.map((item) => item.created_at),
+    ...state.exerciseResults.map((item) => item.created_at),
+    ...state.speakingAttempts.map((item) => item.created_at),
+    ...Object.values(state.lessonProgress).map((item) => item.last_seen || item.completed_at),
+    ...Object.values(state.dailyActivity).map((item) => item.date),
+  ];
+  return dates.reduce((latest, value) => {
+    const time = Date.parse(value);
+    return Number.isFinite(time) ? Math.max(latest, time) : latest;
+  }, 0);
+}
+
 export function useAppData() {
   const [state, setState] = useState<AppState>(initialState);
   const [loading, setLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(navigator.onLine ? 'idle' : 'offline');
+  const [lastSyncedAt, setLastSyncedAt] = useState('');
+  const syncTimerRef = useRef<number | undefined>(undefined);
 
   const syncToServer = useCallback(async (snapshot: Pick<AppState, 'progress' | 'settings' | 'events'>) => {
-    if (!navigator.onLine || !snapshot.settings.appearance) return;
-
-    try {
-      await saveBackupToServer({
-        exported_at: new Date().toISOString(),
-        progress: Object.values(snapshot.progress),
-        settings: snapshot.settings,
-        events: snapshot.events.slice(-1000),
-        tutorMessages: state.tutorMessages.slice(-300),
-        userProfile: state.userProfile,
-        lessonProgress: Object.values(state.lessonProgress),
-        achievements: state.achievements,
-        dailyActivity: Object.values(state.dailyActivity),
-        exerciseResults: state.exerciseResults.slice(-2000),
-        speakingAttempts: state.speakingAttempts.slice(-500),
-      });
-    } catch (error) {
-      console.warn('Auto backup failed', error);
+    if (!snapshot.settings.appearance) return;
+    if (!navigator.onLine) {
+      setSyncStatus('offline');
+      return;
     }
+
+    window.clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = window.setTimeout(async () => {
+      setSyncStatus('syncing');
+      try {
+        const savedAt = new Date().toISOString();
+        await saveBackupToServer({
+          exported_at: savedAt,
+          progress: Object.values(snapshot.progress),
+          settings: snapshot.settings,
+          events: snapshot.events.slice(-1000),
+          tutorMessages: state.tutorMessages.slice(-300),
+          userProfile: state.userProfile,
+          lessonProgress: Object.values(state.lessonProgress),
+          achievements: state.achievements,
+          dailyActivity: Object.values(state.dailyActivity),
+          exerciseResults: state.exerciseResults.slice(-2000),
+          speakingAttempts: state.speakingAttempts.slice(-500),
+        });
+        setLastSyncedAt(savedAt);
+        setSyncStatus('synced');
+      } catch (error) {
+        setSyncStatus('error');
+        console.warn('Auto backup failed', error);
+      }
+    }, 2500);
   }, [state.achievements, state.dailyActivity, state.exerciseResults, state.lessonProgress, state.speakingAttempts, state.tutorMessages, state.userProfile]);
 
   const reload = useCallback(async () => {
     setLoading(true);
     await seedDatabase();
-    const [
-      words,
-      progress,
-      settings,
-      events,
-      tutorMessages,
-      userProfile,
-      lessonProgress,
-      achievements,
-      dailyActivity,
-      exerciseResults,
-      speakingAttempts,
-    ] = await Promise.all([
-      getWords(),
-      getProgress(),
-      getSettings(),
-      getEvents(),
-      getTutorMessages(),
-      getUserProfile(),
-      getLessonProgress(),
-      getAchievements(),
-      getDailyActivity(),
-      getExerciseResults(),
-      getSpeakingAttempts(),
-    ]);
-    setState({ words, progress, settings, events, tutorMessages, userProfile, lessonProgress, achievements, dailyActivity, exerciseResults, speakingAttempts });
+    const readLocal = async () => {
+      const [
+        words,
+        progress,
+        settings,
+        events,
+        tutorMessages,
+        userProfile,
+        lessonProgress,
+        achievements,
+        dailyActivity,
+        exerciseResults,
+        speakingAttempts,
+      ] = await Promise.all([
+        getWords(),
+        getProgress(),
+        getSettings(),
+        getEvents(),
+        getTutorMessages(),
+        getUserProfile(),
+        getLessonProgress(),
+        getAchievements(),
+        getDailyActivity(),
+        getExerciseResults(),
+        getSpeakingAttempts(),
+      ]);
+      return { words, progress, settings, events, tutorMessages, userProfile, lessonProgress, achievements, dailyActivity, exerciseResults, speakingAttempts };
+    };
+
+    let localState = await readLocal();
+    if (navigator.onLine) {
+      try {
+        setSyncStatus('syncing');
+        const remote = await loadBackupFromServer();
+        const remoteTime = Date.parse((remote as { exported_at?: string }).exported_at ?? '');
+        const localTime = latestLocalTime(localState);
+        if (Number.isFinite(remoteTime) && remoteTime > localTime) {
+          await importData(remote);
+          localState = await readLocal();
+        }
+        setLastSyncedAt(Number.isFinite(remoteTime) ? new Date(remoteTime).toISOString() : new Date().toISOString());
+        setSyncStatus('synced');
+      } catch {
+        setSyncStatus('error');
+      }
+    } else {
+      setSyncStatus('offline');
+    }
+    setState(localState);
     setLoading(false);
   }, []);
 
@@ -282,7 +336,11 @@ export function useAppData() {
     };
 
     window.addEventListener('online', syncCurrent);
-    return () => window.removeEventListener('online', syncCurrent);
+    window.addEventListener('offline', () => setSyncStatus('offline'));
+    return () => {
+      window.removeEventListener('online', syncCurrent);
+      window.clearTimeout(syncTimerRef.current);
+    };
   }, [state.events, state.progress, state.settings, syncToServer]);
 
   const stats = useMemo(() => {
@@ -317,6 +375,8 @@ export function useAppData() {
   return {
     ...state,
     loading,
+    syncStatus,
+    lastSyncedAt,
     stats,
     reload,
     reviewWord,

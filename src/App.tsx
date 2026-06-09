@@ -173,6 +173,8 @@ export default function App() {
           clearMistakes={data.clearMistakes}
           resetSettings={data.resetSettings}
           reload={data.reload}
+          syncStatus={data.syncStatus}
+          lastSyncedAt={data.lastSyncedAt}
         />
       ) : null}
     </Layout>
