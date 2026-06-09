@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
-import { PageHeader } from '../components/PageHeader';
+import { AudioButton } from '../components/ai/AudioButton';
+import { PrimaryActionButton, SecondaryActionButton } from '../components/ui/ActionButtons';
+import { GlassCard } from '../components/ui/GlassCard';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { Screen } from '../components/ui/Screen';
+import { EmptyState } from '../components/ui/EmptyState';
 import { getWordsForSource } from '../lib/source';
 import type { ReviewResult, Settings, StudySource, UserProgress, Word } from '../types';
 
@@ -29,19 +32,6 @@ export function StudyPage({
     setRevealed(false);
   }, [source]);
 
-  const speak = () => {
-    if (!word || !settings.sound.pronunciation || !('speechSynthesis' in window)) return;
-    const utterance = new SpeechSynthesisUtterance(word.russian);
-    utterance.lang = 'ru-RU';
-    utterance.rate = settings.sound.speed === 'slow' ? 0.75 : settings.sound.speed === 'fast' ? 1.15 : 0.95;
-    window.speechSynthesis.speak(utterance);
-  };
-
-  useEffect(() => {
-    if (settings.sound.autoPlay) speak();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [word?.id]);
-
   async function answer(result: ReviewResult) {
     if (!word) return;
     await reviewWord(word, result, 'flashcard');
@@ -51,54 +41,57 @@ export function StudyPage({
 
   if (!word) {
     return (
-      <>
-        <PageHeader title={source.title} subtitle="Bu ro'yxat yakunlandi." />
-        <Card>
-          <p className="text-lg font-bold">Hozircha kartochka yo'q.</p>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Boshqa list tanlang yoki keyingi takrorlash vaqtini kuting.</p>
-        </Card>
-      </>
+      <Screen>
+        <EmptyState title={source.title} text="Bu ro'yxat yakunlandi. Boshqa list tanlang yoki keyingi review vaqtini kuting." />
+      </Screen>
     );
   }
 
   return (
-    <>
-      <PageHeader
-        title={source.title}
-        subtitle={`${index + 1}/${lesson.length} - avval eslang, keyin tarjimani oching.`}
-      />
-      <Card className="mx-auto max-w-2xl">
-        <div className="mb-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-brand-600 transition-all" style={{ width: `${percent}%` }} />
-        </div>
-        <div className="min-h-[19rem] rounded-lg bg-slate-50 p-5 text-center dark:bg-slate-800">
-          <p className="text-sm font-bold text-brand-600">{word.category_ru} · {word.page}-varaq</p>
-          <h2 className="mt-10 text-4xl font-black sm:text-5xl">{word.russian}</h2>
-          {revealed ? <p className="mt-8 text-2xl font-bold text-slate-700 dark:text-slate-100">{word.uzbek}</p> : null}
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Button variant="secondary" onClick={() => setRevealed((value) => !value)}>
-            {revealed ? 'Yopish' : "Tarjimasini ko'rish"}
-          </Button>
-          <Button variant="ghost" onClick={speak}>
-            Talaffuz
-          </Button>
-        </div>
-        {revealed ? (
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <Button onClick={() => answer('known')}>Bilaman</Button>
-            <Button variant="secondary" onClick={() => answer('hard')}>
-              Qiyin
-            </Button>
-            <Button variant="danger" onClick={() => answer('unknown')}>
-              Bilmayman
-            </Button>
+    <Screen className="max-w-4xl">
+      <GlassCard>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-black text-brand-600">{source.title}</p>
+            <h1 className="mt-1 text-2xl font-black">Flashcard practice</h1>
           </div>
-        ) : null}
-        <Button variant="ghost" className="mt-3 w-full" onClick={() => setIndex((value) => Math.min(value + 1, lesson.length))}>
-          O'tkazib yuborish
-        </Button>
-      </Card>
-    </>
+          <span className="rounded-2xl bg-slate-950 px-3 py-2 text-sm font-black text-white dark:bg-white dark:text-slate-950">{index + 1}/{lesson.length}</span>
+        </div>
+        <ProgressBar value={percent} className="mt-4" />
+      </GlassCard>
+
+      <button
+        type="button"
+        onClick={() => setRevealed((value) => !value)}
+        className="group min-h-[24rem] rounded-[2rem] bg-gradient-to-br from-white to-brand-50 p-4 text-center shadow-soft ring-1 ring-white transition hover:-translate-y-1 dark:from-slate-900 dark:to-slate-800 dark:ring-slate-800"
+      >
+        <div className="flex items-center justify-between">
+          <span className="rounded-2xl bg-brand-100 px-3 py-2 text-xs font-black text-brand-700 dark:bg-brand-950 dark:text-brand-100">{word.category_ru} / {word.page}-varaq</span>
+          <AudioButton text={word.russian} />
+        </div>
+        <div className="grid min-h-72 place-items-center">
+          <div>
+            <p className="text-sm font-black uppercase text-slate-400">{revealed ? 'Tarjima' : 'Ruscha so\'z'}</p>
+            <h2 className="mt-4 text-5xl font-black tracking-tight sm:text-7xl">{revealed ? word.uzbek : word.russian}</h2>
+            <p className="mt-5 text-sm font-bold text-slate-500">{revealed ? word.russian : "Eslang, keyin tarjimani oching"}</p>
+          </div>
+        </div>
+      </button>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {revealed ? (
+          <>
+            <PrimaryActionButton onClick={() => answer('known')}>Bilaman</PrimaryActionButton>
+            <SecondaryActionButton onClick={() => answer('hard')}>Qiyin</SecondaryActionButton>
+            <button className="min-h-14 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-black text-white shadow-soft" onClick={() => answer('unknown')}>Bilmayman</button>
+          </>
+        ) : (
+          <>
+            <PrimaryActionButton className="sm:col-span-2" onClick={() => setRevealed(true)}>Tarjimasini ko'rish</PrimaryActionButton>
+            <SecondaryActionButton onClick={() => setIndex((value) => Math.min(value + 1, lesson.length))}>O'tkazish</SecondaryActionButton>
+          </>
+        )}
+      </div>
+    </Screen>
   );
 }

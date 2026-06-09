@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { Button } from '../components/Button';
-import { Card } from '../components/Card';
-import { PageHeader } from '../components/PageHeader';
+import { GlassCard } from '../components/ui/GlassCard';
+import { GradientCard } from '../components/ui/GradientCard';
+import { Screen } from '../components/ui/Screen';
+import { SectionHeader } from '../components/ui/SectionHeader';
 import type { ImportPayload } from '../db/indexedDb';
 import { loadBackupFromServer, saveBackupToServer } from '../lib/serverSync';
 import type { Settings } from '../types';
@@ -71,12 +73,16 @@ export function SettingsPage({
   }
 
   return (
-    <>
-      <PageHeader title="Settings" subtitle="Kunlik reja, test, takrorlash, ovoz va progress boshqaruvi." />
+    <Screen>
+      <GradientCard variant="dark">
+        <p className="text-sm font-black uppercase opacity-80">Profile & Settings</p>
+        <h1 className="mt-2 text-3xl font-black sm:text-5xl">Sozlamalar markazi</h1>
+        <p className="mt-2 max-w-2xl text-sm font-bold opacity-80">Learning, practice, AI Coach, backup va data boshqaruvi tartibli sectionlarda.</p>
+      </GradientCard>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <h2 className="text-lg font-black">Kunlik reja</h2>
+        <GlassCard>
+          <SectionHeader title="Learning" subtitle="Kunlik varaq rejasi va dars ritmi." />
           <div className="mt-4 grid grid-cols-3 gap-2">
             <PlanButton label="Yengil" onClick={() => patch({ dailyPlan: { nounsPages: 0.5, adjectivesPages: 0.5, verbsPages: 0.5 } })} />
             <PlanButton label="Standart" onClick={() => patch({ dailyPlan: { nounsPages: 1, adjectivesPages: 1, verbsPages: 1 } })} />
@@ -87,72 +93,72 @@ export function SettingsPage({
             <NumberField label="Sifatlar" value={settings.dailyPlan.adjectivesPages} onChange={(value) => patch({ dailyPlan: { ...settings.dailyPlan, adjectivesPages: value } })} />
             <NumberField label="Fe'llar" value={settings.dailyPlan.verbsPages} onChange={(value) => patch({ dailyPlan: { ...settings.dailyPlan, verbsPages: value } })} />
           </div>
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Test sozlamalari</h2>
+        <GlassCard>
+          <SectionHeader title="Practice" subtitle="Test, written recall va reverse translation." />
           <Toggle label="Flashcard" checked={settings.testTypes.flashcard} onChange={(value) => patch({ testTypes: { ...settings.testTypes, flashcard: value } })} />
           <Toggle label="4 variantli test" checked={settings.testTypes.multipleChoice} onChange={(value) => patch({ testTypes: { ...settings.testTypes, multipleChoice: value } })} />
           <Toggle label="Yozma javob" checked={settings.testTypes.writtenAnswer} onChange={(value) => patch({ testTypes: { ...settings.testTypes, writtenAnswer: value } })} />
           <Toggle label="O'zbekcha -> Ruscha" checked={settings.testTypes.reverseTranslation} onChange={(value) => patch({ testTypes: { ...settings.testTypes, reverseTranslation: value } })} />
           <Toggle label="Faqat xato so'zlar" checked={settings.testTypes.onlyMistakes} onChange={(value) => patch({ testTypes: { ...settings.testTypes, onlyMistakes: value } })} />
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Takrorlash</h2>
+        <GlassCard>
+          <SectionHeader title="Review intensity" subtitle="Eski so'zlar va dars tartibi." />
           <NumberField label="Eski so'z limiti" value={settings.dailyReviewLimit} onChange={(value) => patch({ dailyReviewLimit: value })} />
           <label className="mt-4 block text-sm font-bold">Dars tartibi</label>
           <select
             value={settings.lessonOrder}
             onChange={(event) => patch({ lessonOrder: event.target.value as Settings['lessonOrder'] })}
-            className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 dark:border-slate-700 dark:bg-slate-950"
+            className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 dark:border-slate-800 dark:bg-slate-950"
           >
             <option value="mixed">Aralash</option>
             <option value="category">Kategoriya bo'yicha</option>
           </select>
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Til va tarjima</h2>
+        <GlassCard>
+          <SectionHeader title="Language" subtitle="Interfeys va tarjima ko'rinishi." />
           <Select label="Til" value={settings.language} values={['uz_latin', 'uz_cyrillic', 'ru']} onChange={(value) => patch({ language: value as Settings['language'] })} />
           <Select label="Tarjima ko'rinishi" value={settings.translationScript} values={['latin', 'cyrillic', 'both']} onChange={(value) => patch({ translationScript: value as Settings['translationScript'] })} />
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Bildirishnoma</h2>
+        <GlassCard>
+          <SectionHeader title="Reminder" subtitle="Ichki dars eslatmalari." />
           <Toggle label="Ichki reminder panel" checked={settings.notifications.enabled} onChange={(value) => patch({ notifications: { ...settings.notifications, enabled: value } })} />
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <TimeField label="09:00 dars" value={settings.notifications.morning} onChange={(value) => patch({ notifications: { ...settings.notifications, morning: value } })} />
             <TimeField label="14:00 test" value={settings.notifications.afternoon} onChange={(value) => patch({ notifications: { ...settings.notifications, afternoon: value } })} />
             <TimeField label="21:00 xato" value={settings.notifications.evening} onChange={(value) => patch({ notifications: { ...settings.notifications, evening: value } })} />
           </div>
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Ovoz</h2>
+        <GlassCard>
+          <SectionHeader title="Audio" subtitle="Ruscha talaffuz va avtomatik o'qish." />
           <Toggle label="Ruscha talaffuz" checked={settings.sound.pronunciation} onChange={(value) => patch({ sound: { ...settings.sound, pronunciation: value } })} />
           <Toggle label="Avtomatik talaffuz" checked={settings.sound.autoPlay} onChange={(value) => patch({ sound: { ...settings.sound, autoPlay: value } })} />
           <Select label="Ovoz tezligi" value={settings.sound.speed} values={['slow', 'normal', 'fast']} onChange={(value) => patch({ sound: { ...settings.sound, speed: value as Settings['sound']['speed'] } })} />
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">AI Coach</h2>
+        <GlassCard>
+          <SectionHeader title="AI Coach" subtitle="Tone, audio, IELTS va strict correction." />
           <Select label="Coach tone" value={settings.ai.coachTone} values={['kind', 'normal', 'strict', 'funnyStrict']} onChange={(value) => patch({ ai: { ...settings.ai, coachTone: value as Settings['ai']['coachTone'] } })} />
           <Select label="AI javob uzunligi" value={settings.ai.answerLength} values={['short', 'normal', 'detailed']} onChange={(value) => patch({ ai: { ...settings.ai, answerLength: value as Settings['ai']['answerLength'] } })} />
           <Select label="Speech language" value={settings.ai.speechLanguage} values={['ru-RU', 'uz-UZ', 'en-US']} onChange={(value) => patch({ ai: { ...settings.ai, speechLanguage: value as Settings['ai']['speechLanguage'] } })} />
           <Toggle label="AI javobini avtomatik ovozli o'qish" checked={settings.ai.autoSpeak} onChange={(value) => patch({ ai: { ...settings.ai, autoSpeak: value } })} />
           <Toggle label="IELTS scoring" checked={settings.ai.ieltsScoring} onChange={(value) => patch({ ai: { ...settings.ai, ieltsScoring: value } })} />
           <Toggle label="Strict correction" checked={settings.ai.strictCorrection} onChange={(value) => patch({ ai: { ...settings.ai, strictCorrection: value } })} />
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Dizayn</h2>
+        <GlassCard>
+          <SectionHeader title="Appearance" subtitle="Theme va shrift o'lchami." />
           <Select label="Theme" value={settings.appearance.theme} values={['light', 'dark', 'system']} onChange={(value) => patch({ appearance: { ...settings.appearance, theme: value as Settings['appearance']['theme'] } })} />
           <Select label="Shrift o'lchami" value={settings.appearance.fontSize} values={['small', 'medium', 'large']} onChange={(value) => patch({ appearance: { ...settings.appearance, fontSize: value as Settings['appearance']['fontSize'] } })} />
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Progress boshqaruvi</h2>
+        <GlassCard className="xl:col-span-2">
+          <SectionHeader title="Backup & Data" subtitle="Server sync, JSON export/import va red zone." />
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Auto backup yoqilgan: har bir javobdan keyin progress serverga yuboriladi.
           </p>
@@ -167,9 +173,9 @@ export function SettingsPage({
           </div>
           {serverStatus ? <p className="mt-3 text-sm font-bold text-brand-600">{serverStatus}</p> : null}
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(event) => importFile(event.target.files?.[0])} />
-        </Card>
+        </GlassCard>
       </section>
-    </>
+    </Screen>
   );
 }
 
@@ -187,7 +193,7 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
         step="0.5"
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 dark:border-slate-700 dark:bg-slate-950"
+        className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 outline-none focus:border-brand-500 dark:border-slate-800 dark:bg-slate-950"
       />
     </label>
   );
@@ -201,7 +207,7 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
         type="time"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 dark:border-slate-700 dark:bg-slate-950"
+        className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 outline-none focus:border-brand-500 dark:border-slate-800 dark:bg-slate-950"
       />
     </label>
   );
@@ -209,7 +215,7 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className="mt-3 flex min-h-12 items-center justify-between rounded-lg border border-slate-200 px-3 text-sm font-bold dark:border-slate-800">
+    <label className="mt-3 flex min-h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white/60 px-3 text-sm font-bold dark:border-slate-800 dark:bg-slate-950/60">
       {label}
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 accent-brand-600" />
     </label>
@@ -233,7 +239,7 @@ function Select({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 dark:border-slate-700 dark:bg-slate-950"
+        className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 outline-none focus:border-brand-500 dark:border-slate-800 dark:bg-slate-950"
       >
         {values.map((item) => (
           <option key={item} value={item}>

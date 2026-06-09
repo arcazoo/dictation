@@ -8,8 +8,9 @@ import { RolePlayCard } from '../components/ai/RolePlayCard';
 import { SpeakingFeedbackCard } from '../components/ai/SpeakingFeedbackCard';
 import { VoiceWave } from '../components/ai/VoiceWave';
 import { Button } from '../components/Button';
-import { Card } from '../components/Card';
-import { PageHeader } from '../components/PageHeader';
+import { GlassCard } from '../components/ui/GlassCard';
+import { GradientCard } from '../components/ui/GradientCard';
+import { Screen } from '../components/ui/Screen';
 import { CATEGORIES } from '../data/categories';
 import { parseAiResponse, parseSpeakingFeedback } from '../lib/aiResponseParser';
 import { getTodayLesson } from '../lib/lesson';
@@ -294,12 +295,16 @@ export function TutorPage({
   }
 
   return (
-    <>
-      <PageHeader title="AI Coach" subtitle="Audio speaking, IELTS-style feedback, listening, role-play va strict motivator." />
+    <Screen className="max-w-7xl">
+      <GradientCard variant="violet">
+        <p className="text-sm font-black uppercase opacity-80">AI Coach Studio</p>
+        <h1 className="mt-2 text-3xl font-black sm:text-5xl">Speaking, listening va IELTS coach</h1>
+        <p className="mt-2 max-w-2xl text-sm font-bold opacity-85">Mikrofon, audio replay, structured feedback va strict motivator bir joyda.</p>
+      </GradientCard>
 
       <section className="grid gap-4 xl:grid-cols-[390px_1fr]">
         <div className="space-y-4">
-          <Card className="overflow-hidden bg-slate-950 text-white">
+          <GlassCard className="overflow-hidden bg-slate-950 text-white dark:bg-slate-900">
             <div className="rounded-2xl bg-gradient-to-br from-brand-500 via-blue-500 to-purple-600 p-4">
               <p className="text-sm font-bold opacity-85">Ruscha Tez AI Coach</p>
               <h2 className="mt-2 text-2xl font-black">{context.title}</h2>
@@ -310,16 +315,16 @@ export function TutorPage({
                 <MiniPill label="Organilgan" value={stats.learned} />
               </div>
             </div>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          <GlassCard>
             <h2 className="text-lg font-black">Mode</h2>
             <div className="mt-3">
               <AiModeSelector value={mode} onChange={(next) => void startModePrompt(next)} />
             </div>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          <GlassCard>
             <h2 className="text-lg font-black">Coach tone</h2>
             <div className="mt-3">
               <CoachToneSelector value={tone} onChange={setTone} />
@@ -327,9 +332,9 @@ export function TutorPage({
             <p className="mt-3 text-xs text-slate-500">
               Strict tone motivatsion bo'ladi, lekin haqorat, kamsitish va profanity ishlatilmaydi.
             </p>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          <GlassCard>
             <h2 className="text-lg font-black">Kontekst</h2>
             <select
               value={contextToValue(context)}
@@ -372,12 +377,12 @@ export function TutorPage({
                 </Button>
               ))}
             </div>
-          </Card>
+          </GlassCard>
         </div>
 
         <div className="space-y-4">
           {(mode === 'speakingPractice' || mode === 'ieltsSpeaking' || mode === 'audioConversation') ? (
-            <Card className="border-brand-100 bg-brand-50 dark:border-brand-900 dark:bg-brand-950/30">
+            <GlassCard className="border-brand-100 bg-brand-50 dark:border-brand-900 dark:bg-brand-950/30">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold text-brand-700 dark:text-brand-200">Ruscha savol</p>
@@ -385,14 +390,14 @@ export function TutorPage({
                 </div>
                 <AudioButton text={currentQuestion} />
               </div>
-            </Card>
+            </GlassCard>
           ) : null}
 
           {(mode === 'rolePlay' || mode === 'listeningPractice') ? <RolePlayCard situation={rolePlaySituation} /> : null}
 
           {feedback ? <SpeakingFeedbackCard feedback={feedback} /> : null}
 
-          <Card className="flex min-h-[68vh] flex-col">
+          <GlassCard className="flex min-h-[68vh] flex-col">
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{messages.length} ta xabar saqlangan</p>
               <Button
@@ -446,10 +451,10 @@ export function TutorPage({
                 </Button>
               </form>
             </div>
-          </Card>
+          </GlassCard>
         </div>
       </section>
-    </>
+    </Screen>
   );
 }
 

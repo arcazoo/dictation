@@ -1,8 +1,12 @@
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
-import { PageHeader } from '../components/PageHeader';
+import { useState } from 'react';
+import { PrimaryActionButton, SecondaryActionButton } from '../components/ui/ActionButtons';
+import { GlassCard } from '../components/ui/GlassCard';
+import { GradientCard } from '../components/ui/GradientCard';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { Screen } from '../components/ui/Screen';
+import { SectionHeader } from '../components/ui/SectionHeader';
 import { CATEGORIES } from '../data/categories';
-import { getPageStatus } from '../lib/lesson';
+import { getCategoryProgress, getPageStatus } from '../lib/lesson';
 import type { Category, StudySource, UserProgress, Word } from '../types';
 
 export function SectionsPage({
@@ -20,54 +24,87 @@ export function SectionsPage({
     ...category,
     pages: [...new Set(words.filter((word) => word.category === category.id).map((word) => word.page))].sort((a, b) => a - b),
   }));
+  const [active, setActive] = useState<Category>(pagesByCategory[0]?.id ?? 'noun');
+  const activeCategory = pagesByCategory.find((category) => category.id === active) ?? pagesByCategory[0];
 
   return (
-    <>
-      <PageHeader title="List tanlash" subtitle="Kategoriya yoki aniq varaqni tanlab, faqat o'sha ro'yxat bilan ishlang." />
-      <section className="grid gap-4 lg:grid-cols-3">
-        {pagesByCategory.map((category) => (
-          <Card key={category.id}>
-            <p className="text-sm font-bold text-brand-600">{category.subtitle}</p>
-            <h2 className="mt-1 text-xl font-black">{category.title}</h2>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button
-                onClick={() => startStudy({ kind: 'category', title: category.title, category: category.id })}
-                className="px-2"
+    <Screen>
+      <GradientCard variant="dark">
+        <p className="text-sm font-black uppercase opacity-80">Practice Library</p>
+        <h1 className="mt-2 text-3xl font-black sm:text-5xl">List tanlash markazi</h1>
+        <p className="mt-2 max-w-2xl text-sm font-bold opacity-80">Otlar, sifatlar va fe'llarni varaqma-varaq premium mashq qiling.</p>
+      </GradientCard>
+
+      <section className="grid gap-4 lg:grid-cols-[320px_1fr]">
+        <div className="space-y-3">
+          {pagesByCategory.map((category) => {
+            const categoryWords = words.filter((word) => word.category === category.id);
+            const mastered = categoryWords.filter((word) => progress[word.id]?.status === 'mastered').length;
+            const weak = categoryWords.filter((word) => (progress[word.id]?.wrong_count ?? 0) > 0).length;
+            const percent = getCategoryProgress(words, progress, category.id);
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setActive(category.id)}
+                className={`w-full rounded-3xl p-4 text-left shadow-soft transition active:scale-[0.98] ${
+                  active === category.id
+                    ? 'bg-gradient-to-br from-brand-500 to-sky-500 text-white'
+                    : 'bg-white/82 text-slate-900 dark:bg-slate-900/82 dark:text-white'
+                }`}
               >
-                Hammasi
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => startTest({ kind: 'category', title: `${category.title} testi`, category: category.id })}
-                className="px-2"
-              >
-                Test
-              </Button>
-            </div>
-            <div className="mt-4 grid max-h-[60vh] gap-2 overflow-y-auto pr-1">
-              {(category.pages.length ? category.pages : [1, 2, 3]).map((page) => (
-                <PageRow
-                  key={page}
-                  page={page}
-                  status={getPageStatus(words, progress, category.id as Category, page)}
-                  count={words.filter((word) => word.category === category.id && word.page === page).length}
-                  onStudy={() =>
-                    startStudy({ kind: 'page', title: `${category.title} · ${page}-varaq`, category: category.id, page })
-                  }
-                  onTest={() =>
-                    startTest({ kind: 'page', title: `${category.title} · ${page}-varaq testi`, category: category.id, page })
-                  }
-                />
-              ))}
-            </div>
-          </Card>
-        ))}
+                <p className="text-xs font-black uppercase opacity-70">{category.subtitle}</p>
+                <h2 className="mt-1 text-xl font-black">{category.title}</h2>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <Mini label="Words" value={categoryWords.length} />
+                  <Mini label="Mastered" value={mastered} />
+                  <Mini label="Weak" value={weak} />
+                </div>
+                <ProgressBar value={percent} className="mt-4 bg-white/25" />
+              </button>
+            );
+          })}
+        </div>
+
+        <GlassCard>
+          <SectionHeader
+            title={activeCategory.title}
+            subtitle={`${activeCategory.pages.length} ta varaq / ${words.filter((word) => word.category === activeCategory.id).length} ta so'z`}
+            action={
+              <div className="hidden gap-2 sm:flex">
+                <SecondaryActionButton onClick={() => startStudy({ kind: 'category', title: activeCategory.title, category: activeCategory.id })}>Hammasi</SecondaryActionButton>
+                <PrimaryActionButton onClick={() => startTest({ kind: 'category', title: `${activeCategory.title} testi`, category: activeCategory.id })}>Test</PrimaryActionButton>
+              </div>
+            }
+          />
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            {activeCategory.pages.map((page) => (
+              <PageChip
+                key={page}
+                page={page}
+                status={getPageStatus(words, progress, activeCategory.id as Category, page)}
+                count={words.filter((word) => word.category === activeCategory.id && word.page === page).length}
+                onStudy={() => startStudy({ kind: 'page', title: `${activeCategory.title} / ${page}-varaq`, category: activeCategory.id, page })}
+                onTest={() => startTest({ kind: 'page', title: `${activeCategory.title} / ${page}-varaq testi`, category: activeCategory.id, page })}
+              />
+            ))}
+          </div>
+        </GlassCard>
       </section>
-    </>
+    </Screen>
   );
 }
 
-function PageRow({
+function Mini({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl bg-white/15 p-2">
+      <p className="text-[10px] font-bold opacity-70">{label}</p>
+      <p className="text-sm font-black">{value}</p>
+    </div>
+  );
+}
+
+function PageChip({
   page,
   status,
   count,
@@ -80,24 +117,20 @@ function PageRow({
   onStudy: () => void;
   onTest: () => void;
 }) {
-  const tone =
-    status === 'Tugagan'
-      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200'
-      : status === 'Takrorlash kerak'
-        ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200'
-        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+  const value = status === 'Tugagan' ? 100 : status === "O'rganilmoqda" ? 45 : status === 'Takrorlash kerak' ? 70 : 8;
   return (
-    <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-      <div className="flex items-center justify-between gap-3">
-      <div>
-        <p className="font-bold">{page}-varaq</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{count} ta so'z</p>
+    <div className="rounded-3xl bg-white/86 p-3 shadow-soft ring-1 ring-white dark:bg-slate-950/70 dark:ring-slate-800">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-lg font-black">{page}-varaq</p>
+          <p className="text-xs font-bold text-slate-500">{count} ta so'z</p>
+        </div>
+        <span className="rounded-xl bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">{status}</span>
       </div>
-      <span className={`rounded-full px-3 py-1 text-xs font-bold ${tone}`}>{status}</span>
-      </div>
+      <ProgressBar value={value} className="mt-3 h-2" tone={status === 'Takrorlash kerak' ? 'amber' : 'brand'} />
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <Button onClick={onStudy} className="min-h-10 px-2 py-2 text-xs">O'rganish</Button>
-        <Button variant="secondary" onClick={onTest} className="min-h-10 px-2 py-2 text-xs">Test</Button>
+        <SecondaryActionButton className="min-h-10 px-2 py-2 text-xs" onClick={onStudy}>Cards</SecondaryActionButton>
+        <PrimaryActionButton className="min-h-10 px-2 py-2 text-xs" onClick={onTest}>Test</PrimaryActionButton>
       </div>
     </div>
   );

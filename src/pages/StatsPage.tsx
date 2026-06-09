@@ -1,7 +1,10 @@
-import { Card } from '../components/Card';
-import { PageHeader } from '../components/PageHeader';
-import { StatTile } from '../components/StatTile';
-import { WordCard } from '../components/WordCard';
+import { EmptyState } from '../components/ui/EmptyState';
+import { GlassCard } from '../components/ui/GlassCard';
+import { GradientCard } from '../components/ui/GradientCard';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { Screen } from '../components/ui/Screen';
+import { SectionHeader } from '../components/ui/SectionHeader';
+import { StatCard } from '../components/ui/StatCard';
 import { CATEGORIES } from '../data/categories';
 import { getCategoryProgress } from '../lib/lesson';
 import type { Achievement, DailyActivity, UserProfile, UserProgress, Word } from '../types';
@@ -39,119 +42,128 @@ export function StatsPage({
     ...category,
     percent: getCategoryProgress(words, progress, category.id),
   })).sort((a, b) => a.percent - b.percent);
+  const mastered = Object.values(progress).filter((item) => item.status === 'mastered').length;
 
   return (
-    <>
-      <PageHeader title="Statistika" subtitle="XP, streak, aniqlik, kuchsiz bo'limlar va eng qiyin so'zlar." />
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Level" value={profile.level} />
-        <StatTile label="Umumiy XP" value={profile.total_xp} />
-        <StatTile label="Streak" value={`${profile.streak || stats.streak} kun`} />
-        <StatTile label="Hearts" value={`${profile.hearts}/5`} />
+    <Screen>
+      <GradientCard variant="emerald">
+        <p className="text-sm font-black uppercase opacity-80">Analytics dashboard</p>
+        <h1 className="mt-2 text-3xl font-black sm:text-5xl">Progress raqamlari</h1>
+        <p className="mt-2 text-sm font-bold opacity-85">XP, streak, accuracy, weak categories va achievements.</p>
+      </GradientCard>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <StatCard label="Total XP" value={profile.total_xp} tone="brand" />
+        <StatCard label="Level" value={profile.level} tone="violet" />
+        <StatCard label="Streak" value={`${profile.streak || stats.streak} kun`} tone="amber" />
+        <StatCard label="Hearts" value={`${profile.hearts}/5`} tone="rose" />
+        <StatCard label="Accuracy" value={`${stats.accuracy}%`} tone="sky" />
+        <StatCard label="Mastered" value={mastered} tone="brand" />
       </section>
 
-      <section className="mt-4 grid gap-3 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold text-brand-600">Kunlik XP maqsad</p>
-              <p className="mt-2 text-3xl font-black">
-                {today?.xp ?? 0} / {dailyGoal}
-              </p>
-            </div>
-            <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-black text-brand-700 dark:bg-brand-950 dark:text-brand-200">
-              {dailyPercent}%
-            </span>
+      <section className="grid gap-4 xl:grid-cols-[1fr_380px]">
+        <GlassCard>
+          <SectionHeader title="Daily XP goal" subtitle={`${today?.xp ?? 0}/${dailyGoal} XP bugun`} />
+          <ProgressBar value={dailyPercent} className="mt-4 h-4" />
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <Mini label="Bugun" value={`${stats.todayCount} javob`} />
+            <Mini label="Jami javob" value={totalAnswers} />
+            <Mini label="O'rganilgan" value={stats.learned} />
           </div>
-          <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-            <div className="h-full rounded-full bg-brand-600" style={{ width: `${dailyPercent}%` }} />
-          </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <MiniStat label="Bugun" value={`${stats.todayCount} javob`} />
-            <MiniStat label="Aniqlik" value={`${stats.accuracy}%`} />
-            <MiniStat label="Jami javob" value={totalAnswers} />
-          </div>
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <p className="text-sm font-bold text-brand-600">Haftalik faollik</p>
-          <div className="mt-4 flex h-28 items-end gap-2">
-            {weekly.length ? (
-              weekly.map((day) => {
-                const height = Math.max(12, Math.min(100, Math.round((day.xp / dailyGoal) * 100)));
-                return (
-                  <div key={day.date} className="flex flex-1 flex-col items-center gap-2">
-                    <div className="w-full rounded-t-lg bg-brand-500" style={{ height: `${height}%` }} />
-                    <span className="text-[10px] font-bold text-slate-500">{day.date.slice(5)}</span>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="self-center text-sm text-slate-500">Hali haftalik activity yo'q.</p>
-            )}
+        <GlassCard>
+          <SectionHeader title="Weekly activity" subtitle="Oxirgi 7 kun XP barlari." />
+          <div className="mt-5 flex h-36 items-end gap-2">
+            {weekly.length ? weekly.map((day) => {
+              const height = Math.max(12, Math.min(100, Math.round((day.xp / dailyGoal) * 100)));
+              return (
+                <div key={day.date} className="flex flex-1 flex-col items-center gap-2">
+                  <div className="w-full rounded-t-2xl bg-gradient-to-t from-brand-500 to-sky-400 shadow-soft" style={{ height: `${height}%` }} />
+                  <span className="text-[10px] font-black text-slate-500">{day.date.slice(5)}</span>
+                </div>
+              );
+            }) : <p className="self-center text-sm font-bold text-slate-500">Hali haftalik activity yo'q.</p>}
           </div>
-        </Card>
+        </GlassCard>
       </section>
 
-      <section className="mt-4 grid gap-3 lg:grid-cols-3">
-        {CATEGORIES.map((category) => (
-          <Card key={category.id}>
-            <p className="text-sm font-bold text-brand-600">{category.title}</p>
-            <p className="mt-2 text-3xl font-black">{getCategoryProgress(words, progress, category.id)}%</p>
-          </Card>
-        ))}
+      <section className="grid gap-4 lg:grid-cols-3">
+        {CATEGORIES.map((category) => {
+          const percent = getCategoryProgress(words, progress, category.id);
+          return (
+            <GlassCard key={category.id}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-black text-brand-600">{category.title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{category.subtitle}</p>
+                </div>
+                <p className="text-3xl font-black">{percent}%</p>
+              </div>
+              <ProgressBar value={percent} className="mt-4" />
+            </GlassCard>
+          );
+        })}
       </section>
 
-      <section className="mt-4 grid gap-3 lg:grid-cols-2">
-        <Card>
-          <h2 className="text-lg font-black">Kuchsiz bo'limlar</h2>
-          <div className="mt-3 space-y-3">
+      <section className="grid gap-4 lg:grid-cols-2">
+        <GlassCard>
+          <SectionHeader title="Weak categories" subtitle="Past progress bo'yicha tartiblangan." />
+          <div className="mt-4 space-y-4">
             {weakCategories.map((category) => (
               <div key={category.id}>
-                <div className="flex justify-between text-sm font-bold">
+                <div className="flex justify-between text-sm font-black">
                   <span>{category.title}</span>
                   <span>{category.percent}%</span>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                  <div className="h-full rounded-full bg-amber-500" style={{ width: `${category.percent}%` }} />
-                </div>
+                <ProgressBar value={category.percent} tone={category.percent < 35 ? 'rose' : 'amber'} className="mt-2 h-2" />
               </div>
             ))}
           </div>
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-lg font-black">Achievements</h2>
-          <div className="mt-3 grid gap-2">
-            {achievements.length ? (
-              achievements.slice(0, 4).map((achievement) => (
-                <div key={achievement.id} className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+        <GlassCard>
+          <SectionHeader title="Achievements" subtitle="Motivatsion badge'lar." />
+          {achievements.length ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {achievements.slice(0, 6).map((achievement) => (
+                <div key={achievement.id} className="rounded-3xl bg-gradient-to-br from-violet-50 to-sky-50 p-4 shadow-soft dark:from-violet-950/50 dark:to-sky-950/30">
                   <p className="text-sm font-black">{achievement.title}</p>
                   <p className="mt-1 text-xs text-slate-500">{achievement.description}</p>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-slate-500">Achievementlar darslar davomida ochiladi.</p>
-            )}
-          </div>
-        </Card>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="Achievementlar hali ochilmadi" text="Darslar davomida streak va mastered so'zlar bilan badge'lar ochiladi." />
+          )}
+        </GlassCard>
       </section>
 
-      <section className="mt-4">
-        <h2 className="mb-3 text-lg font-black">Eng qiyin so'zlar</h2>
-        <div className="grid gap-3 lg:grid-cols-2">
+      <GlassCard>
+        <SectionHeader title="Hardest words" subtitle="Eng ko'p xato qilingan so'zlar." />
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {stats.hardWords.map((word) => (
-            <WordCard key={word.id} word={word} meta={`Xato soni: ${progress[word.id]?.wrong_count ?? 0}`} />
+            <div key={word.id} className="rounded-3xl bg-slate-50 p-4 dark:bg-slate-950">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xl font-black">{word.russian}</p>
+                  <p className="mt-1 text-sm font-bold text-slate-500">{word.uzbek}</p>
+                </div>
+                <span className="rounded-2xl bg-rose-50 px-3 py-2 text-sm font-black text-rose-700 dark:bg-rose-950 dark:text-rose-100">
+                  x{progress[word.id]?.wrong_count ?? 0}
+                </span>
+              </div>
+            </div>
           ))}
         </div>
-      </section>
-    </>
+      </GlassCard>
+    </Screen>
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string | number }) {
+function Mini({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-950">
+    <div className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-950">
       <p className="text-xs font-bold text-slate-500">{label}</p>
       <p className="mt-1 text-lg font-black">{value}</p>
     </div>
