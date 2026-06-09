@@ -4,21 +4,51 @@ import {
   clearProgress,
   clearTutorMessages,
   exportData,
+  getAchievements,
+  getDailyActivity,
   getEvents,
+  getExerciseResults,
+  getLessonProgress,
   getProgress,
   getSettings,
+  getSpeakingAttempts,
   getTutorMessages,
+  getUserProfile,
   getWords,
   importData,
   resetSettings,
+  saveAchievement,
+  saveDailyActivity,
+  saveExerciseResult,
+  saveLessonProgress,
   saveProgress,
   saveSettings,
+  saveSpeakingAttempt,
   saveTutorMessage,
+  saveUserProfile,
   seedDatabase,
 } from '../db/indexedDb';
-import type { AnswerQuality, AppState, ReviewEvent, ReviewResult, Settings, TutorChatMessage, Word } from '../types';
+import type {
+  AnswerQuality,
+  AppState,
+  ExerciseResult,
+  LessonProgress,
+  ReviewEvent,
+  ReviewResult,
+  Settings,
+  SpeakingAttempt,
+  TutorChatMessage,
+  Word,
+} from '../types';
 import { applyReview } from '../lib/srs';
 import { saveBackupToServer } from '../lib/serverSync';
+import {
+  achievementsForState,
+  makeExerciseResult,
+  updateDailyActivity,
+  updateProfileForExercise,
+  xpForResult,
+} from '../lib/gamification';
 
 const initialState: AppState = {
   words: [],
@@ -26,6 +56,24 @@ const initialState: AppState = {
   settings: {} as Settings,
   events: [],
   tutorMessages: [],
+  userProfile: {
+    id: 'local-user',
+    name: 'Learner',
+    created_at: new Date().toISOString(),
+    total_xp: 0,
+    level: 1,
+    streak: 0,
+    last_active_date: '',
+    hearts: 5,
+    daily_goal_xp: 60,
+    daily_goal_minutes: 10,
+    hearts_enabled: true,
+  },
+  lessonProgress: {},
+  achievements: [],
+  dailyActivity: {},
+  exerciseResults: [],
+  speakingAttempts: [],
 };
 
 export function useAppData() {
@@ -41,23 +89,48 @@ export function useAppData() {
         progress: Object.values(snapshot.progress),
         settings: snapshot.settings,
         events: snapshot.events.slice(-1000),
+        tutorMessages: state.tutorMessages.slice(-300),
+        userProfile: state.userProfile,
+        lessonProgress: Object.values(state.lessonProgress),
+        achievements: state.achievements,
+        dailyActivity: Object.values(state.dailyActivity),
+        exerciseResults: state.exerciseResults.slice(-2000),
+        speakingAttempts: state.speakingAttempts.slice(-500),
       });
     } catch (error) {
       console.warn('Auto backup failed', error);
     }
-  }, []);
+  }, [state.achievements, state.dailyActivity, state.exerciseResults, state.lessonProgress, state.speakingAttempts, state.tutorMessages, state.userProfile]);
 
   const reload = useCallback(async () => {
     setLoading(true);
     await seedDatabase();
-    const [words, progress, settings, events, tutorMessages] = await Promise.all([
+    const [
+      words,
+      progress,
+      settings,
+      events,
+      tutorMessages,
+      userProfile,
+      lessonProgress,
+      achievements,
+      dailyActivity,
+      exerciseResults,
+      speakingAttempts,
+    ] = await Promise.all([
       getWords(),
       getProgress(),
       getSettings(),
       getEvents(),
       getTutorMessages(),
+      getUserProfile(),
+      getLessonProgress(),
+      getAchievements(),
+      getDailyActivity(),
+      getExerciseResults(),
+      getSpeakingAttempts(),
     ]);
-    setState({ words, progress, settings, events, tutorMessages });
+    setState({ words, progress, settings, events, tutorMessages, userProfile, lessonProgress, achievements, dailyActivity, exerciseResults, speakingAttempts });
     setLoading(false);
   }, []);
 
@@ -84,8 +157,10 @@ export function useAppData() {
   );
 
   const reviewWord = useCallback(
-    async (word: Word, result: ReviewResult | AnswerQuality, mode: ReviewEvent['mode']) => {
-      const next = applyReview(state.progress[word.id], word.id, result);
+    async (word: Word, result: ReviewResult | AnswerQuality, mode: ReviewEvent['mode'], responseMs = 0) => {
+      const previousProgress = state.progress[word.id];
+      const next = applyReview(previousProgress, word.id, result, responseMs);
+      const xp = xpForResult(result, previousProgress, (previousProgress?.wrong_count ?? 0) > 0 && (result === 'correct' || result === 'known'));
       const event: ReviewEvent = {
         id: `${Date.now()}-${word.id}-${Math.random().toString(16).slice(2)}`,
         word_id: word.id,
@@ -93,18 +168,54 @@ export function useAppData() {
         result,
         created_at: new Date().toISOString(),
       };
-      await Promise.all([saveProgress(next), addEvent(event)]);
+      const exerciseResult = makeExerciseResult({
+        exerciseId: event.id,
+        wordId: word.id,
+        type: mode === 'multipleChoice' ? 'multipleChoiceRuUz' : mode === 'written' ? 'writtenRecall' : 'multipleChoiceRuUz',
+        result,
+        responseMs,
+        xp,
+      });
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const nextActivity = updateDailyActivity(state.dailyActivity[todayKey], result, xp);
+      const nextProfile = updateProfileForExercise(state.userProfile, result, xp);
+      const masteredWords = Object.values({ ...state.progress, [word.id]: next }).filter((item) => item.status === 'mastered').length;
+      const newAchievements = achievementsForState(nextProfile, state.achievements, masteredWords, [...state.exerciseResults, exerciseResult]);
+      await Promise.all([
+        saveProgress(next),
+        addEvent(event),
+        saveExerciseResult(exerciseResult),
+        saveDailyActivity(nextActivity),
+        saveUserProfile(nextProfile),
+        ...newAchievements.map((achievement) => saveAchievement(achievement)),
+      ]);
       const nextProgress = { ...state.progress, [word.id]: next };
       const nextEvents = [...state.events, event];
+      const nextExerciseResults = [...state.exerciseResults, exerciseResult];
+      const nextAchievements = [...state.achievements, ...newAchievements];
       setState((current) => ({
         ...current,
         progress: nextProgress,
         events: nextEvents,
+        exerciseResults: nextExerciseResults,
+        dailyActivity: { ...current.dailyActivity, [todayKey]: nextActivity },
+        userProfile: nextProfile,
+        achievements: nextAchievements,
       }));
       void syncToServer({ progress: nextProgress, settings: state.settings, events: nextEvents });
     },
-    [state.events, state.progress, state.settings, syncToServer],
+    [state.achievements, state.dailyActivity, state.events, state.exerciseResults, state.progress, state.settings, state.userProfile, syncToServer],
   );
+
+  const saveLessonResult = useCallback(async (lesson: LessonProgress, results: ExerciseResult[]) => {
+    await saveLessonProgress(lesson);
+    await Promise.all(results.map((result) => saveExerciseResult(result)));
+    setState((current) => ({
+      ...current,
+      lessonProgress: { ...current.lessonProgress, [lesson.lesson_id]: lesson },
+      exerciseResults: [...current.exerciseResults, ...results],
+    }));
+  }, []);
 
   const addTutorMessage = useCallback(async (message: Omit<TutorChatMessage, 'created_at'>) => {
     const fullMessage: TutorChatMessage = {
@@ -123,6 +234,15 @@ export function useAppData() {
     await clearTutorMessages();
     setState((current) => ({ ...current, tutorMessages: [] }));
   }, []);
+
+  const addSpeakingAttempt = useCallback(async (attempt: SpeakingAttempt) => {
+    await saveSpeakingAttempt(attempt);
+    setState((current) => ({
+      ...current,
+      speakingAttempts: [...current.speakingAttempts, attempt].slice(-500),
+    }));
+    void syncToServer({ progress: state.progress, settings: state.settings, events: state.events });
+  }, [state.events, state.progress, state.settings, syncToServer]);
 
   const clearMistakes = useCallback(async () => {
     const nextItems = Object.values(state.progress).map((item) => ({
@@ -207,6 +327,8 @@ export function useAppData() {
     clearMistakes,
     addTutorMessage,
     clearTutorChat,
+    addSpeakingAttempt,
+    saveLessonResult,
     resetSettings: resetAllSettings,
   };
 }

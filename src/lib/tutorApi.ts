@@ -1,4 +1,4 @@
-import type { Word } from '../types';
+import type { AiCoachMode, CoachTone, Word } from '../types';
 
 export interface TutorMessage {
   id: string;
@@ -8,7 +8,11 @@ export interface TutorMessage {
 
 export interface TutorRequest {
   message: string;
-  mode: 'chat' | 'explain' | 'examples' | 'quiz' | 'mistakes';
+  mode: AiCoachMode;
+  tone?: CoachTone;
+  wantsJson?: boolean;
+  answerLength?: 'short' | 'normal' | 'detailed';
+  context?: unknown;
   word?: Word;
   stats?: {
     learned: number;
@@ -29,5 +33,5 @@ export async function askTutor(payload: TutorRequest) {
     body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error('AI tutor javob bermadi');
-  return response.json() as Promise<{ ok: boolean; answer: string; fallback?: boolean }>;
+  return response.json() as Promise<{ ok: boolean; answer: string; fallback?: boolean; provider?: string; error?: string }>;
 }

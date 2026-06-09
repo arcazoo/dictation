@@ -1,11 +1,34 @@
 import { DEFAULT_SETTINGS } from '../data/defaultSettings';
 import { SEED_WORDS } from '../data/seedWords';
-import type { ReviewEvent, Settings, TutorChatMessage, UserProgress, Word } from '../types';
+import type {
+  Achievement,
+  DailyActivity,
+  ExerciseResult,
+  LessonProgress,
+  ReviewEvent,
+  Settings,
+  SpeakingAttempt,
+  TutorChatMessage,
+  UserProfile,
+  UserProgress,
+  Word,
+} from '../types';
 
 const DB_NAME = 'ruscha-tez-db';
-const DB_VERSION = 2;
+const DB_VERSION = 4;
 
-type StoreName = 'words' | 'progress' | 'settings' | 'events' | 'tutorMessages';
+type StoreName =
+  | 'words'
+  | 'progress'
+  | 'settings'
+  | 'events'
+  | 'tutorMessages'
+  | 'userProfile'
+  | 'lessonProgress'
+  | 'achievements'
+  | 'dailyActivity'
+  | 'exerciseResults'
+  | 'speakingAttempts';
 
 export interface ImportPayload {
   words?: Word[];
@@ -13,7 +36,27 @@ export interface ImportPayload {
   settings?: Settings;
   events?: ReviewEvent[];
   tutorMessages?: TutorChatMessage[];
+  userProfile?: UserProfile;
+  lessonProgress?: LessonProgress[];
+  achievements?: Achievement[];
+  dailyActivity?: DailyActivity[];
+  exerciseResults?: ExerciseResult[];
+  speakingAttempts?: SpeakingAttempt[];
 }
+
+export const DEFAULT_USER_PROFILE: UserProfile = {
+  id: 'local-user',
+  name: 'Learner',
+  created_at: new Date().toISOString(),
+  total_xp: 0,
+  level: 1,
+  streak: 0,
+  last_active_date: '',
+  hearts: 5,
+  daily_goal_xp: 60,
+  daily_goal_minutes: 10,
+  hearts_enabled: true,
+};
 
 function requestToPromise<T>(request: IDBRequest<T>) {
   return new Promise<T>((resolve, reject) => {
@@ -47,6 +90,29 @@ function openDb() {
       if (!db.objectStoreNames.contains('tutorMessages')) {
         const tutorMessages = db.createObjectStore('tutorMessages', { keyPath: 'id' });
         tutorMessages.createIndex('created_at', 'created_at');
+      }
+      if (!db.objectStoreNames.contains('userProfile')) {
+        db.createObjectStore('userProfile', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('lessonProgress')) {
+        const lessonProgress = db.createObjectStore('lessonProgress', { keyPath: 'lesson_id' });
+        lessonProgress.createIndex('status', 'status');
+      }
+      if (!db.objectStoreNames.contains('achievements')) {
+        db.createObjectStore('achievements', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('dailyActivity')) {
+        db.createObjectStore('dailyActivity', { keyPath: 'date' });
+      }
+      if (!db.objectStoreNames.contains('exerciseResults')) {
+        const exerciseResults = db.createObjectStore('exerciseResults', { keyPath: 'exercise_id' });
+        exerciseResults.createIndex('created_at', 'created_at');
+        exerciseResults.createIndex('word_id', 'word_id');
+      }
+      if (!db.objectStoreNames.contains('speakingAttempts')) {
+        const speakingAttempts = db.createObjectStore('speakingAttempts', { keyPath: 'id' });
+        speakingAttempts.createIndex('created_at', 'created_at');
+        speakingAttempts.createIndex('mode', 'mode');
       }
     };
 
@@ -131,7 +197,17 @@ export async function getSettings() {
   const row = await withStore<{ key: string; value: Settings } | undefined>('settings', 'readonly', (store) =>
     requestToPromise(store.get('settings')),
   );
-  return row?.value ?? DEFAULT_SETTINGS;
+  const value = row?.value ?? DEFAULT_SETTINGS;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...value,
+    dailyPlan: { ...DEFAULT_SETTINGS.dailyPlan, ...value.dailyPlan },
+    testTypes: { ...DEFAULT_SETTINGS.testTypes, ...value.testTypes },
+    notifications: { ...DEFAULT_SETTINGS.notifications, ...value.notifications },
+    sound: { ...DEFAULT_SETTINGS.sound, ...value.sound },
+    appearance: { ...DEFAULT_SETTINGS.appearance, ...value.appearance },
+    ai: { ...DEFAULT_SETTINGS.ai, ...value.ai },
+  };
 }
 
 export async function saveSettings(settings: Settings) {
@@ -163,6 +239,81 @@ export async function getTutorMessages() {
   );
 }
 
+export async function getUserProfile() {
+  const profile = await withStore<UserProfile | undefined>('userProfile', 'readonly', (store) =>
+    requestToPromise(store.get('local-user')),
+  );
+  return profile ?? DEFAULT_USER_PROFILE;
+}
+
+export async function saveUserProfile(profile: UserProfile) {
+  await withStore('userProfile', 'readwrite', (store) => {
+    store.put(profile);
+  });
+}
+
+export async function getLessonProgress() {
+  const items = await withStore<LessonProgress[]>('lessonProgress', 'readonly', (store) =>
+    requestToPromise(store.getAll() as IDBRequest<LessonProgress[]>),
+  );
+  return Object.fromEntries(items.map((item) => [item.lesson_id, item]));
+}
+
+export async function saveLessonProgress(progress: LessonProgress) {
+  await withStore('lessonProgress', 'readwrite', (store) => {
+    store.put(progress);
+  });
+}
+
+export async function getAchievements() {
+  return withStore<Achievement[]>('achievements', 'readonly', (store) =>
+    requestToPromise(store.getAll() as IDBRequest<Achievement[]>),
+  );
+}
+
+export async function saveAchievement(achievement: Achievement) {
+  await withStore('achievements', 'readwrite', (store) => {
+    store.put(achievement);
+  });
+}
+
+export async function getDailyActivity() {
+  const items = await withStore<DailyActivity[]>('dailyActivity', 'readonly', (store) =>
+    requestToPromise(store.getAll() as IDBRequest<DailyActivity[]>),
+  );
+  return Object.fromEntries(items.map((item) => [item.date, item]));
+}
+
+export async function saveDailyActivity(activity: DailyActivity) {
+  await withStore('dailyActivity', 'readwrite', (store) => {
+    store.put(activity);
+  });
+}
+
+export async function getExerciseResults() {
+  return withStore<ExerciseResult[]>('exerciseResults', 'readonly', (store) =>
+    requestToPromise(store.getAll() as IDBRequest<ExerciseResult[]>),
+  );
+}
+
+export async function saveExerciseResult(result: ExerciseResult) {
+  await withStore('exerciseResults', 'readwrite', (store) => {
+    store.put(result);
+  });
+}
+
+export async function getSpeakingAttempts() {
+  return withStore<SpeakingAttempt[]>('speakingAttempts', 'readonly', (store) =>
+    requestToPromise(store.getAll() as IDBRequest<SpeakingAttempt[]>),
+  );
+}
+
+export async function saveSpeakingAttempt(attempt: SpeakingAttempt) {
+  await withStore('speakingAttempts', 'readwrite', (store) => {
+    store.put(attempt);
+  });
+}
+
 export async function saveTutorMessage(message: TutorChatMessage) {
   await withStore('tutorMessages', 'readwrite', (store) => {
     store.put(message);
@@ -181,12 +332,19 @@ export async function clearTutorMessages() {
 }
 
 export async function exportData() {
-  const [words, progress, settings, events, tutorMessages] = await Promise.all([
+  const [words, progress, settings, events, tutorMessages, userProfile, lessonProgress, achievements, dailyActivity, exerciseResults, speakingAttempts] =
+    await Promise.all([
     getWords(),
     getProgress(),
     getSettings(),
     getEvents(),
     getTutorMessages(),
+    getUserProfile(),
+    getLessonProgress(),
+    getAchievements(),
+    getDailyActivity(),
+    getExerciseResults(),
+    getSpeakingAttempts(),
   ]);
   return {
     exported_at: new Date().toISOString(),
@@ -195,6 +353,12 @@ export async function exportData() {
     settings,
     events,
     tutorMessages,
+    userProfile,
+    lessonProgress: Object.values(lessonProgress),
+    achievements,
+    dailyActivity: Object.values(dailyActivity),
+    exerciseResults,
+    speakingAttempts,
   };
 }
 
@@ -214,4 +378,35 @@ export async function importData(payload: ImportPayload) {
     });
   }
   if (payload.tutorMessages) await replaceTutorMessages(payload.tutorMessages);
+  if (payload.userProfile) await saveUserProfile(payload.userProfile);
+  if (payload.lessonProgress) {
+    await withStore('lessonProgress', 'readwrite', async (store) => {
+      await requestToPromise(store.clear());
+      for (const item of payload.lessonProgress ?? []) store.put(item);
+    });
+  }
+  if (payload.achievements) {
+    await withStore('achievements', 'readwrite', async (store) => {
+      await requestToPromise(store.clear());
+      for (const item of payload.achievements ?? []) store.put(item);
+    });
+  }
+  if (payload.dailyActivity) {
+    await withStore('dailyActivity', 'readwrite', async (store) => {
+      await requestToPromise(store.clear());
+      for (const item of payload.dailyActivity ?? []) store.put(item);
+    });
+  }
+  if (payload.exerciseResults) {
+    await withStore('exerciseResults', 'readwrite', async (store) => {
+      await requestToPromise(store.clear());
+      for (const item of payload.exerciseResults ?? []) store.put(item);
+    });
+  }
+  if (payload.speakingAttempts) {
+    await withStore('speakingAttempts', 'readwrite', async (store) => {
+      await requestToPromise(store.clear());
+      for (const item of payload.speakingAttempts ?? []) store.put(item);
+    });
+  }
 }

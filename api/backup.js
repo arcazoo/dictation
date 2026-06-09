@@ -9,6 +9,13 @@ function compactPayload(payload) {
     progress: payload?.progress || [],
     settings: payload?.settings || null,
     events: (payload?.events || []).slice(-1000),
+    tutorMessages: (payload?.tutorMessages || []).slice(-300),
+    userProfile: payload?.userProfile || null,
+    lessonProgress: payload?.lessonProgress || [],
+    achievements: payload?.achievements || [],
+    dailyActivity: payload?.dailyActivity || [],
+    exerciseResults: (payload?.exerciseResults || []).slice(-2000),
+    speakingAttempts: (payload?.speakingAttempts || []).slice(-500),
   };
 }
 

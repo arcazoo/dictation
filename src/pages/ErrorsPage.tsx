@@ -31,7 +31,7 @@ export function ErrorsPage({
             <WordCard
               key={word.id}
               word={word}
-              meta={`Xato: ${item?.wrong_count ?? 0} · Oxirgi: ${formatShortDate(item?.last_seen)} · Keyingi: ${formatShortDate(item?.next_review)}`}
+              meta={`Xato: ${item?.wrong_count ?? 0} / Oxirgi: ${formatShortDate(item?.last_seen)} / Keyingi: ${formatShortDate(item?.next_review)}`}
             />
           );
         })}

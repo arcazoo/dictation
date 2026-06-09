@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Layout, type View } from './components/Layout';
 import { useAppData } from './hooks/useAppData';
+import { buildLearningPath } from './lib/adaptiveLesson';
 import { ErrorsPage } from './pages/ErrorsPage';
+import { LearningPathPage } from './pages/LearningPathPage';
+import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { SectionsPage } from './pages/SectionsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
@@ -9,9 +12,9 @@ import { StudyPage } from './pages/StudyPage';
 import { TestPage } from './pages/TestPage';
 import { TodayPage } from './pages/TodayPage';
 import { TutorPage } from './pages/TutorPage';
-import type { StudySource } from './types';
+import type { LearningLesson, LessonProgress, StudySource } from './types';
 
-const views: View[] = ['today', 'sections', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
+const views: View[] = ['today', 'path', 'lesson', 'sections', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
 
 function getHashView(): View {
   const hash = window.location.hash.replace('#', '') as View;
@@ -23,6 +26,7 @@ export default function App() {
   const [view, setViewState] = useState<View>(getHashView());
   const [studySource, setStudySource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
   const [testSource, setTestSource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
+  const [activeLesson, setActiveLesson] = useState<LearningLesson | null>(null);
 
   useEffect(() => {
     const onHash = () => setViewState(getHashView());
@@ -43,6 +47,14 @@ export default function App() {
   const startTest = (source: StudySource) => {
     setTestSource(source);
     setView('test');
+  };
+
+  const units = buildLearningPath(data.words, data.progress, data.lessonProgress ?? {});
+
+  const startLesson = (lesson: LearningLesson) => {
+    if (lesson.status === 'locked') return;
+    setActiveLesson(lesson);
+    setView('lesson');
   };
 
   if (data.loading || !data.settings.appearance) {
@@ -68,6 +80,36 @@ export default function App() {
           setView={setView}
           startStudy={startStudy}
           startTest={startTest}
+          startLesson={startLesson}
+          firstLesson={units[0]?.lessons.find((lesson) => lesson.status === 'available' || lesson.status === 'review_needed') ?? units[0]?.lessons[0]}
+          profile={data.userProfile}
+          todayActivity={data.dailyActivity[new Date().toISOString().slice(0, 10)]}
+        />
+      ) : null}
+      {view === 'path' ? <LearningPathPage units={units} startLesson={startLesson} /> : null}
+      {view === 'lesson' && activeLesson ? (
+        <LessonPlayerPage
+          lesson={activeLesson}
+          words={data.words}
+          progress={data.progress}
+          settings={data.settings}
+          hearts={data.userProfile.hearts}
+          reviewWord={data.reviewWord}
+          onFinish={async (summary) => {
+            const lessonProgress: LessonProgress = {
+              lesson_id: activeLesson.id,
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              score: summary.score,
+              xp_earned: summary.xp,
+              mistakes: summary.mistakes,
+              attempts: (data.lessonProgress[activeLesson.id]?.attempts ?? 0) + 1,
+              progress_percent: 100,
+              last_seen: new Date().toISOString(),
+            };
+            await data.saveLessonResult(lessonProgress, summary.results);
+            setView('today');
+          }}
         />
       ) : null}
       {view === 'sections' ? (
@@ -101,6 +143,7 @@ export default function App() {
           savedMessages={data.tutorMessages}
           addTutorMessage={data.addTutorMessage}
           clearTutorChat={data.clearTutorChat}
+          addSpeakingAttempt={data.addSpeakingAttempt}
         />
       ) : null}
       {view === 'errors' ? (
@@ -110,7 +153,16 @@ export default function App() {
           startMistakes={() => startStudy({ kind: 'mistakes', title: "Xato so'zlar" })}
         />
       ) : null}
-      {view === 'stats' ? <StatsPage words={data.words} progress={data.progress} stats={data.stats} /> : null}
+      {view === 'stats' ? (
+        <StatsPage
+          words={data.words}
+          progress={data.progress}
+          stats={data.stats}
+          profile={data.userProfile}
+          dailyActivity={data.dailyActivity}
+          achievements={data.achievements}
+        />
+      ) : null}
       {view === 'settings' ? (
         <SettingsPage
           settings={data.settings}

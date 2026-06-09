@@ -4,7 +4,7 @@ import { PageHeader } from '../components/PageHeader';
 import { StatTile } from '../components/StatTile';
 import { CATEGORIES } from '../data/categories';
 import { getCategoryProgress, getDueWords, getTodayLesson } from '../lib/lesson';
-import type { Settings, StudySource, UserProgress, Word } from '../types';
+import type { DailyActivity, LearningLesson, Settings, StudySource, UserProfile, UserProgress, Word } from '../types';
 
 export function TodayPage({
   words,
@@ -15,15 +15,23 @@ export function TodayPage({
   setView,
   startStudy,
   startTest,
+  startLesson,
+  firstLesson,
+  profile,
+  todayActivity,
 }: {
   words: Word[];
   progress: Record<string, UserProgress>;
   settings: Settings;
   learned: number;
   accuracy: number;
-  setView: (view: 'study' | 'sections' | 'ai') => void;
+  setView: (view: 'study' | 'sections' | 'ai' | 'path') => void;
   startStudy: (source: StudySource) => void;
   startTest: (source: StudySource) => void;
+  startLesson: (lesson: LearningLesson) => void;
+  firstLesson?: LearningLesson;
+  profile: UserProfile;
+  todayActivity?: DailyActivity;
 }) {
   const due = getDueWords(words, progress, settings.dailyReviewLimit);
   const lesson = getTodayLesson(words, progress, settings);
@@ -32,14 +40,22 @@ export function TodayPage({
 
   return (
     <>
-      <PageHeader title="Bugungi mashq" subtitle="So'z yodlash, test va AI tutor bir joyda." />
+      <PageHeader title="Bugungi mashq" subtitle="So'z yodlash, test va AI coach bir joyda." />
+
+      <section className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+        <MiniPill label="XP" value={profile.total_xp} />
+        <MiniPill label="Level" value={profile.level} />
+        <MiniPill label="Streak" value={`${profile.streak} kun`} />
+        <MiniPill label="Hearts" value={profile.hearts_enabled ? profile.hearts : 'off'} />
+        <MiniPill label="Daily" value={`${todayActivity?.xp ?? 0}/${profile.daily_goal_xp}`} />
+      </section>
 
       <section className="rounded-lg bg-brand-600 p-5 text-white shadow-soft dark:bg-brand-700">
         <p className="text-sm font-bold opacity-85">Davom ettirish</p>
         <div className="mt-2 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-black">{lesson.length} so'z</h2>
-            <p className="mt-1 text-sm opacity-90">{due.length} ta eski so'z takrorlashga tayyor</p>
+            <h2 className="text-3xl font-black">{firstLesson?.title ?? `${lesson.length} so'z`}</h2>
+            <p className="mt-1 text-sm opacity-90">{firstLesson?.subtitle ?? `${due.length} ta eski so'z takrorlashga tayyor`}</p>
           </div>
           <div className="text-right">
             <p className="text-4xl font-black">{percent}%</p>
@@ -47,7 +63,7 @@ export function TodayPage({
           </div>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <Button className="bg-white text-brand-700 hover:bg-brand-50" onClick={() => startStudy({ kind: 'today', title: 'Bugungi dars' })}>
+          <Button className="bg-white text-brand-700 hover:bg-brand-50" onClick={() => (firstLesson ? startLesson(firstLesson) : startStudy({ kind: 'today', title: 'Bugungi dars' }))}>
             Boshlash
           </Button>
           <Button className="bg-brand-700 text-white hover:bg-brand-700 dark:bg-brand-800" onClick={() => setView('ai')}>
@@ -58,6 +74,7 @@ export function TodayPage({
 
       <section className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
         <Button variant="secondary" onClick={() => setView('sections')}>List tanlash</Button>
+        <Button variant="secondary" onClick={() => setView('path')}>Path</Button>
         <Button variant="secondary" onClick={() => setView('ai')}>AI Tutor</Button>
         <Button variant="secondary" onClick={() => startStudy({ kind: 'mistakes', title: "Xato so'zlar" })}>Xatolar</Button>
         <Button variant="ghost" onClick={() => startStudy({ kind: 'category', title: 'Otlar', category: 'noun' })}>Otlar</Button>
@@ -102,4 +119,13 @@ export function TodayPage({
 
 function statsLabel(total: number, done: number) {
   return total ? `${done}/${total}` : '0';
+}
+
+function MiniPill({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-center shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-sm font-black">{value}</p>
+    </div>
+  );
 }

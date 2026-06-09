@@ -94,7 +94,7 @@ export function SettingsPage({
           <Toggle label="Flashcard" checked={settings.testTypes.flashcard} onChange={(value) => patch({ testTypes: { ...settings.testTypes, flashcard: value } })} />
           <Toggle label="4 variantli test" checked={settings.testTypes.multipleChoice} onChange={(value) => patch({ testTypes: { ...settings.testTypes, multipleChoice: value } })} />
           <Toggle label="Yozma javob" checked={settings.testTypes.writtenAnswer} onChange={(value) => patch({ testTypes: { ...settings.testTypes, writtenAnswer: value } })} />
-          <Toggle label="O'zbekcha → Ruscha" checked={settings.testTypes.reverseTranslation} onChange={(value) => patch({ testTypes: { ...settings.testTypes, reverseTranslation: value } })} />
+          <Toggle label="O'zbekcha -> Ruscha" checked={settings.testTypes.reverseTranslation} onChange={(value) => patch({ testTypes: { ...settings.testTypes, reverseTranslation: value } })} />
           <Toggle label="Faqat xato so'zlar" checked={settings.testTypes.onlyMistakes} onChange={(value) => patch({ testTypes: { ...settings.testTypes, onlyMistakes: value } })} />
         </Card>
 
@@ -133,6 +133,16 @@ export function SettingsPage({
           <Toggle label="Ruscha talaffuz" checked={settings.sound.pronunciation} onChange={(value) => patch({ sound: { ...settings.sound, pronunciation: value } })} />
           <Toggle label="Avtomatik talaffuz" checked={settings.sound.autoPlay} onChange={(value) => patch({ sound: { ...settings.sound, autoPlay: value } })} />
           <Select label="Ovoz tezligi" value={settings.sound.speed} values={['slow', 'normal', 'fast']} onChange={(value) => patch({ sound: { ...settings.sound, speed: value as Settings['sound']['speed'] } })} />
+        </Card>
+
+        <Card>
+          <h2 className="text-lg font-black">AI Coach</h2>
+          <Select label="Coach tone" value={settings.ai.coachTone} values={['kind', 'normal', 'strict', 'funnyStrict']} onChange={(value) => patch({ ai: { ...settings.ai, coachTone: value as Settings['ai']['coachTone'] } })} />
+          <Select label="AI javob uzunligi" value={settings.ai.answerLength} values={['short', 'normal', 'detailed']} onChange={(value) => patch({ ai: { ...settings.ai, answerLength: value as Settings['ai']['answerLength'] } })} />
+          <Select label="Speech language" value={settings.ai.speechLanguage} values={['ru-RU', 'uz-UZ', 'en-US']} onChange={(value) => patch({ ai: { ...settings.ai, speechLanguage: value as Settings['ai']['speechLanguage'] } })} />
+          <Toggle label="AI javobini avtomatik ovozli o'qish" checked={settings.ai.autoSpeak} onChange={(value) => patch({ ai: { ...settings.ai, autoSpeak: value } })} />
+          <Toggle label="IELTS scoring" checked={settings.ai.ieltsScoring} onChange={(value) => patch({ ai: { ...settings.ai, ieltsScoring: value } })} />
+          <Toggle label="Strict correction" checked={settings.ai.strictCorrection} onChange={(value) => patch({ ai: { ...settings.ai, strictCorrection: value } })} />
         </Card>
 
         <Card>

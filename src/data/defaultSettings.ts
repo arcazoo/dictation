@@ -34,4 +34,12 @@ export const DEFAULT_SETTINGS: Settings = {
     theme: 'system',
     fontSize: 'medium',
   },
+  ai: {
+    coachTone: 'normal',
+    answerLength: 'normal',
+    autoSpeak: false,
+    speechLanguage: 'ru-RU',
+    ieltsScoring: true,
+    strictCorrection: true,
+  },
 };

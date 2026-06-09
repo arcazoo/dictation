@@ -11,6 +11,29 @@ const backupFile = path.join(dataDir, 'progress-backup.json');
 const port = Number(process.env.PORT || 4173);
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const modeInstructions = {
+  chat: 'Answer the learner question and keep the conversation going.',
+  explain: 'Explain the selected word or selected list in a simple way.',
+  examples: 'Generate simple Russian example sentences and Uzbek Latin translations.',
+  quiz: 'Create one quiz question from context_words. Wait for the learner answer.',
+  mistakes: 'Analyze recent mistakes and give a short repair drill.',
+  dailyCoach: 'Create a daily 5-10 minute plan based on stats, mistakes, and review words.',
+  lessonFeedback: 'Give feedback about lesson performance and what to do next.',
+  grammarHelp: 'Explain the needed Russian grammar point very simply.',
+  adaptivePlan: 'Recommend the next exercise types and weak categories.',
+  speakingPractice: 'Ask or evaluate a Russian speaking answer with scores and corrections.',
+  listeningPractice: 'Create a Russian listening drill and check the learner answer.',
+  ieltsSpeaking: 'Act like an IELTS Speaking examiner and score the answer.',
+  rolePlay: 'Run a Russian role-play conversation and continue after correction.',
+  audioConversation: 'Have a short voice-friendly Russian conversation.',
+  strictMotivator: 'Give strict but respectful motivation and three concrete tasks.',
+};
+const toneInstructions = {
+  kind: 'Be soft, patient, and encouraging.',
+  normal: 'Be clear, direct, and teacher-like.',
+  strict: 'Be strict and motivating without insults, profanity, threats, or identity attacks.',
+  funnyStrict: 'Be funny-strict with playful pressure, but never insult or shame the learner.',
+};
 
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -39,7 +62,30 @@ function buildTutorText(body) {
     {
       role: 'Ruscha Tez AI Tutor',
       instruction:
-        'Teach Russian vocabulary to Uzbek speakers. Reply in Uzbek Latin. Keep answers short, practical, mobile-friendly. Use simple Russian examples with Uzbek translations. If the user message is an answer to your previous quiz question, check it first, then ask the next question. Do not restart the whole lesson after every answer.',
+        "You are the AI Coach of the Ruscha Tez app. Teach Russian to Uzbek speakers in Uzbek Latin. Be active, lively, short, and clear. Always correct mistakes and give the next drill. Write Russian in real Cyrillic. Never insult, shame, use profanity, discriminate, threaten, or attack identity. Strict tones must stay respectful.",
+      modeInstruction: modeInstructions[body.mode] || modeInstructions.chat,
+      toneInstruction: toneInstructions[body.tone] || toneInstructions.normal,
+      jsonResponseRules:
+        body.wantsJson || body.mode === 'speakingPractice' || body.mode === 'ieltsSpeaking'
+          ? {
+              requiredFormat: 'Return ONLY valid JSON. No markdown.',
+              schema: {
+                type: 'speakingFeedback',
+                score: 72,
+                ieltsBand: 5.5,
+                fluency: 65,
+                grammar: 70,
+                vocabulary: 75,
+                pronunciationEstimate: 60,
+                relevance: 80,
+                mistakes: [],
+                betterAnswer_ru: 'Я иду в магазин.',
+                betterAnswer_uz: "Men do'konga ketyapman.",
+                nextQuestion_ru: 'Что ты обычно покупаешь в магазине?',
+                motivation_uz: "Yomon emas, lekin fe'lni aniqroq ishlatamiz.",
+              },
+            }
+          : null,
       ...body,
       contextWords: (body.contextWords || []).slice(0, 40),
       history: (body.history || []).slice(-10),

@@ -1,12 +1,12 @@
 import type { PropsWithChildren } from 'react';
 
-export type View = 'today' | 'sections' | 'study' | 'test' | 'ai' | 'errors' | 'stats' | 'settings';
+export type View = 'today' | 'path' | 'lesson' | 'sections' | 'study' | 'test' | 'ai' | 'errors' | 'stats' | 'settings';
 
 const navItems: Array<{ id: View; label: string; short: string; icon: string }> = [
   { id: 'today', label: 'Bugun', short: 'Bugun', icon: '●' },
+  { id: 'path', label: 'Path', short: 'Path', icon: 'P' },
   { id: 'sections', label: 'Listlar', short: 'List', icon: '▤' },
   { id: 'ai', label: 'AI Tutor', short: 'AI', icon: 'AI' },
-  { id: 'test', label: 'Test', short: 'Test', icon: '?' },
   { id: 'settings', label: 'Settings', short: 'Sozla', icon: '*' },
 ];
 
