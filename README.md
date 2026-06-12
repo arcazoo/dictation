@@ -1,6 +1,6 @@
 # Ruscha Tez 3.0
 
-Ruscha Tez — ruscha-o'zbekcha so'zlarni va **to'liq rus tili grammatikasini (A1→B1)** o'rganish uchun mobile-first web app. FSRS-5 spaced repetition, active recall, Duolingo-uslubidagi Learning Path, gamification va Gemini AI Coach bilan.
+Ruscha Tez — ruscha-o'zbekcha so'zlarni va **to'liq rus tili grammatikasini (A1→C1)** o'rganish uchun mobile-first web app. FSRS-5 spaced repetition, active recall, Duolingo-uslubidagi Learning Path, gamification va Gemini AI Coach bilan.
 
 ## Stack
 
@@ -29,7 +29,7 @@ npm run server   # http://127.0.0.1:4173
 
 ## Grammatika kursi
 
-`src/content/grammar/` — 8 modul, 45 mavzu, ~370 mashq:
+`src/content/grammar/` — 10 modul, 61 mavzu, ~475 mashq (A1→C1):
 
 1. **Asos** — alifbo, urg'u/reduktsiya, yumshoqlik, olmoshlar, intonatsiya
 2. **Ot va rod** — rod, ko'plik, jonlilik, egalik
@@ -39,6 +39,8 @@ npm run server   # http://127.0.0.1:4173
 6. **Sifat va ravish** — moslashuv, qisqa shakl, qiyoslash
 7. **Sintaksis** — savollar, который, чтобы/если, bilvosita nutq, sonlar, modallar
 8. **Nutq amaliyoti** — kesim, ravishdosh, yuklamalar, muloqot odobi, dialoglar
+9. **Ileri grammatika (B2)** — to'liq kesim tizimi, passiv, sonlar turlanishi, prefiks ma'nolari, бы shart mayli, kitobiy predloglar, so'z tartibi, fe'l boshqaruvi
+10. **Mahorat (C1)** — kitobiy sintaksis, frazeologizmlar, rasmiy/so'zlashuv uslublari, modal yuklamalar, so'z yasalishi, sinonimlar registri, ravishdosh oborotlari
 
 Har mavzuda: nazariya jadvallar bilan, **o'zbek tili bilan solishtirish**, urg'u belgili misollar (TTS bilan), o'zbeklar qiladigan tipik xatolar, 8-12 ta drill mashq, mini dialog. Progress IndexedDB'da saqlanadi va 3-7 kunlik SRS interval bilan takrorga chiqadi.
 

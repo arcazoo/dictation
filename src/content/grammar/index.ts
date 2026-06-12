@@ -7,6 +7,8 @@ import { MODULE_5 } from './module5';
 import { MODULE_6 } from './module6';
 import { MODULE_7 } from './module7';
 import { MODULE_8 } from './module8';
+import { MODULE_9 } from './module9';
+import { MODULE_10 } from './module10';
 
 export const GRAMMAR_MODULES: GrammarModuleMeta[] = [
   { id: 1, title: 'Asos', subtitle: 'Alifbo, talaffuz, eng sodda gaplar', level: 'A1', icon: 'А' },
@@ -17,6 +19,8 @@ export const GRAMMAR_MODULES: GrammarModuleMeta[] = [
   { id: 6, title: 'Sifat va ravish', subtitle: 'Moslashuv, qiyoslash', level: 'A2', icon: 'С' },
   { id: 7, title: 'Sintaksis', subtitle: 'Murakkab gap, sonlar, modallar', level: 'B1', icon: 'К' },
   { id: 8, title: 'Nutq amaliyoti', subtitle: 'Kesim, yuklamalar, muloqot', level: 'B1', icon: 'Д' },
+  { id: 9, title: 'Ileri grammatika', subtitle: 'Kesimlar, passiv, sonlar, бы', level: 'B2', icon: 'В' },
+  { id: 10, title: 'Mahorat', subtitle: 'Uslublar, idiomalar, yuklamalar', level: 'C1', icon: 'М' },
 ];
 
 export const GRAMMAR_TOPICS: GrammarTopic[] = [
@@ -28,6 +32,8 @@ export const GRAMMAR_TOPICS: GrammarTopic[] = [
   ...MODULE_6,
   ...MODULE_7,
   ...MODULE_8,
+  ...MODULE_9,
+  ...MODULE_10,
 ];
 
 export const TOPIC_BY_ID = new Map(GRAMMAR_TOPICS.map((topic) => [topic.id, topic]));

@@ -231,7 +231,7 @@ export interface SpeakingAttempt {
 
 // ===================== Grammatika kursi =====================
 
-export type GrammarLevel = 'A1' | 'A2' | 'B1';
+export type GrammarLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 export type GrammarExerciseType =
   | 'choose'
   | 'fillBlank'

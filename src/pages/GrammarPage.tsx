@@ -37,7 +37,7 @@ export function GrammarPage({ setView }: { setView: (view: View) => void }) {
     <Screen>
       <GradientCard variant="violet">
         <p className="text-xs font-black uppercase tracking-widest opacity-80">Grammatika kursi</p>
-        <h1 className="mt-1 text-2xl font-black">Rus tili A1 → B1</h1>
+        <h1 className="mt-1 text-2xl font-black">Rus tili A1 → C1</h1>
         <p className="mt-2 text-sm font-bold opacity-90">
           {GRAMMAR_MODULES.length} modul · {GRAMMAR_TOPICS.length} mavzu · {completedCount} tasi tugatildi
         </p>

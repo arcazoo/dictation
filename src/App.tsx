@@ -16,7 +16,7 @@ import { TodayPage } from './pages/TodayPage';
 // Katta sahifalar alohida chunk bo'lib yuklanadi
 const GrammarPage = lazy(() => import('./pages/GrammarPage').then((m) => ({ default: m.GrammarPage })));
 const GrammarTopicPage = lazy(() => import('./pages/GrammarTopicPage').then((m) => ({ default: m.GrammarTopicPage })));
-const TutorPage = lazy(() => import('./pages/TutorPage').then((m) => ({ default: m.TutorPage })));
+const VoiceCoachPage = lazy(() => import('./pages/VoiceCoachPage').then((m) => ({ default: m.VoiceCoachPage })));
 import type { LearningLesson, LessonProgress, StudySource } from './types';
 
 const views: View[] = ['today', 'path', 'lesson', 'sections', 'grammar', 'grammarTopic', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
@@ -31,7 +31,6 @@ export default function App() {
   const [view, setViewState] = useState<View>(getHashView());
   const [studySource, setStudySource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
   const [testSource, setTestSource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
-  const [aiDraft, setAiDraft] = useState('');
   const [activeLesson, setActiveLesson] = useState<LearningLesson | null>(null);
 
   useEffect(() => {
@@ -53,11 +52,6 @@ export default function App() {
   const startTest = (source: StudySource) => {
     setTestSource(source);
     setView('test');
-  };
-
-  const openAiWithPrompt = (prompt: string) => {
-    setAiDraft(prompt);
-    setView('ai');
   };
 
   const units = buildLearningPath(data.words, data.progress, data.lessonProgress ?? {});
@@ -157,18 +151,7 @@ export default function App() {
       ) : null}
       {view === 'ai' ? (
         <Suspense fallback={<LoadingState />}>
-        <TutorPage
-          words={data.words}
-          progress={data.progress}
-          settings={data.settings}
-          stats={data.stats}
-          savedMessages={data.tutorMessages}
-          addTutorMessage={data.addTutorMessage}
-          clearTutorChat={data.clearTutorChat}
-          addSpeakingAttempt={data.addSpeakingAttempt}
-          draftPrompt={aiDraft}
-          clearDraftPrompt={() => setAiDraft('')}
-        />
+          <VoiceCoachPage />
         </Suspense>
       ) : null}
       {view === 'errors' ? (

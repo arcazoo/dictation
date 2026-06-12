@@ -20,7 +20,7 @@ const MODE_INSTRUCTIONS = {
   rolePlay:
     'Run a Russian role-play conversation. Use everyday situations and keep the conversation moving after correcting mistakes.',
   audioConversation:
-    'Have a short voice-friendly Russian conversation. Keep turns brief and ask one next question.',
+    'LIVE VOICE CALL. You are on a real-time phone call with the learner. Follow extra_context strictly: it defines the call language and scenario. Reply with ONLY your next spoken line (max 2 short sentences + exactly one question). Never use markdown, lists, translations, brackets, or meta commentary — only natural speech that will be read aloud by TTS.',
   strictMotivator:
     'Analyze progress and give three concrete tasks with strict but respectful motivation.',
 };
