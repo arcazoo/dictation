@@ -2,19 +2,31 @@ import type { PropsWithChildren } from 'react';
 import { AppShell } from './ui/AppShell';
 import type { NavItem } from './ui/BottomNav';
 
-export type View = 'today' | 'path' | 'lesson' | 'sections' | 'grammar' | 'study' | 'test' | 'ai' | 'errors' | 'stats' | 'settings';
+export type View =
+  | 'today'
+  | 'path'
+  | 'lesson'
+  | 'sections'
+  | 'grammar'
+  | 'grammarTopic'
+  | 'study'
+  | 'test'
+  | 'ai'
+  | 'errors'
+  | 'stats'
+  | 'settings';
 
 const navItems: NavItem[] = [
   { id: 'today', label: 'Bugun', short: 'Bugun', icon: 'B' },
   { id: 'path', label: "Yo'l", short: "Yo'l", icon: 'Y' },
-  { id: 'sections', label: 'Mashq', short: 'Mashq', icon: 'M' },
+  { id: 'grammar', label: 'Grammatika', short: 'Gram', icon: 'G' },
   { id: 'ai', label: 'AI Coach', short: 'AI', icon: 'AI' },
   { id: 'settings', label: 'Profil', short: 'Profil', icon: 'P' },
 ];
 
 const desktopItems: NavItem[] = [
   ...navItems,
-  { id: 'grammar', label: 'Grammar Lab', short: 'Grammar', icon: 'G' },
+  { id: 'sections', label: 'Mashq', short: 'Mashq', icon: 'M' },
   { id: 'study', label: 'Flashcard', short: 'Cards', icon: 'F' },
   { id: 'test', label: 'Test', short: 'Test', icon: 'T' },
   { id: 'errors', label: 'Mistake Repair', short: 'Xato', icon: 'X' },

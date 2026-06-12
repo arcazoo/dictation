@@ -26,8 +26,9 @@ export function LessonPlayerPage({
   reviewWord: (word: Word, result: AnswerQuality, mode: 'multipleChoice' | 'written', responseMs?: number) => Promise<void>;
   onFinish: (summary: { score: number; xp: number; mistakes: number; results: ExerciseResult[] }) => Promise<void>;
 }) {
-  const lessonWords = useMemo(() => words.filter((word) => lesson.wordIds.includes(word.id)).slice(0, 18), [lesson.wordIds, words]);
-  const exercises = useMemo(() => buildExercisesForLesson(lesson.id, lessonWords, words), [lesson.id, lessonWords, words]);
+  const lessonWords = useMemo(() => words.filter((word) => lesson.wordIds.includes(word.id)).slice(0, 12), [lesson.wordIds, words]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- progress ataylab dependency emas: mashqlar dars boshida bir marta tuziladi
+  const exercises = useMemo(() => buildExercisesForLesson(lesson.id, lessonWords, words, progress), [lesson.id, lessonWords, words]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
@@ -63,6 +64,11 @@ export function LessonPlayerPage({
       correctAnswer: exercise.correctAnswer,
       message: quality === 'correct' ? "Zo'r, to'g'ri!" : quality === 'close' ? "Yaqin. Bitta joyini charxlaymiz." : "Noto'g'ri, lekin shu yerda tuzatamiz.",
     });
+  }
+
+  function skipIntro() {
+    // Tanishtirish bosqichi baholanmaydi — shunchaki keyingisiga o'tamiz
+    void next();
   }
 
   async function next() {
@@ -117,44 +123,65 @@ export function LessonPlayerPage({
         <ConfettiLayer active={completed || feedback?.quality === 'correct'} />
         <div className="rounded-3xl bg-gradient-to-br from-slate-950 to-slate-800 p-5 text-white dark:from-white dark:to-slate-200 dark:text-slate-950">
           <div className="flex items-center justify-between gap-3">
-            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase">{exercise.type}</span>
+            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase">{exerciseTypeLabel(exercise.type)}</span>
             <AudioButton text={exercise.word.russian} />
           </div>
-          <h1 className="mt-5 text-3xl font-black leading-tight">{exercise.prompt}</h1>
+          {exercise.type === 'introduce' ? (
+            <div className="mt-5">
+              <h1 className="text-4xl font-black leading-tight">{exercise.word.stressed ?? exercise.word.russian}</h1>
+              <p className="mt-2 text-xl font-black opacity-90">{exercise.word.uzbek}</p>
+              {exercise.word.example_ru ? (
+                <p className="mt-4 rounded-2xl bg-white/10 p-3 text-sm font-bold dark:bg-slate-950/10">
+                  {exercise.word.example_ru}
+                  {exercise.word.example_uz ? <span className="mt-1 block opacity-75">{exercise.word.example_uz}</span> : null}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <h1 className="mt-5 text-3xl font-black leading-tight">{exercise.prompt}</h1>
+          )}
           <p className="mt-3 text-sm font-bold opacity-75">{exercise.word.category_ru} / {exercise.word.page}-varaq</p>
         </div>
 
-        <div className="mt-5">
-          {exercise.choices ? (
-            <ChoiceGrid exercise={exercise} answer={answer} feedback={feedback} setAnswer={setAnswer} />
-          ) : exercise.tokens ? (
-            <TokenBuilder
-              exercise={exercise}
-              selectedTokens={selectedTokens}
-              setSelectedTokens={setSelectedTokens}
-            />
-          ) : (
-            <textarea
-              value={answer}
-              onChange={(event) => setAnswer(event.target.value)}
-              className="min-h-32 w-full resize-none rounded-3xl border border-slate-200 bg-white/80 px-5 py-4 text-lg font-bold outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 dark:border-slate-800 dark:bg-slate-950 dark:focus:ring-brand-950"
-              placeholder="Javobni yozing..."
-            />
-          )}
-        </div>
+        {exercise.type !== 'introduce' ? (
+          <div className="mt-5">
+            {exercise.choices ? (
+              <ChoiceGrid exercise={exercise} answer={answer} feedback={feedback} setAnswer={setAnswer} />
+            ) : exercise.tokens ? (
+              <TokenBuilder
+                exercise={exercise}
+                selectedTokens={selectedTokens}
+                setSelectedTokens={setSelectedTokens}
+              />
+            ) : (
+              <textarea
+                value={answer}
+                onChange={(event) => setAnswer(event.target.value)}
+                className="min-h-32 w-full resize-none rounded-3xl border border-slate-200 bg-white/80 px-5 py-4 text-lg font-bold outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100 dark:border-slate-800 dark:bg-slate-950 dark:focus:ring-brand-950"
+                placeholder="Javobni yozing..."
+              />
+            )}
+          </div>
+        ) : null}
 
         {feedback ? <FeedbackPanel feedback={feedback} /> : null}
       </GlassCard>
 
       <div className="sticky bottom-24 z-20 rounded-3xl border border-white/70 bg-white/85 p-3 shadow-soft backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/85 lg:bottom-5">
-        <div className="grid grid-cols-2 gap-3">
-          <PrimaryActionButton disabled={feedback !== null || !canCheck} onClick={check}>
-            Tekshirish
+        {exercise.type === 'introduce' ? (
+          <PrimaryActionButton className="w-full" onClick={skipIntro}>
+            Tushundim, davom etamiz
           </PrimaryActionButton>
-          <SecondaryActionButton disabled={!feedback} onClick={next}>
-            Davom etish
-          </SecondaryActionButton>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <PrimaryActionButton disabled={feedback !== null || !canCheck} onClick={check}>
+              Tekshirish
+            </PrimaryActionButton>
+            <SecondaryActionButton disabled={!feedback} onClick={next}>
+              Davom etish
+            </SecondaryActionButton>
+          </div>
+        )}
       </div>
     </Screen>
   );
@@ -247,6 +274,34 @@ function FeedbackPanel({ feedback }: { feedback: { quality: AnswerQuality; messa
       <p className="mt-2 text-sm">To'g'ri javob: <span className="font-black">{feedback.correctAnswer}</span></p>
     </div>
   );
+}
+
+function exerciseTypeLabel(type: Exercise['type']) {
+  switch (type) {
+    case 'introduce':
+      return "Yangi so'z";
+    case 'multipleChoiceRuUz':
+    case 'multipleChoiceUzRu':
+      return 'Tanlang';
+    case 'writtenRecall':
+    case 'writtenReverse':
+      return 'Yozing';
+    case 'wordBuilder':
+      return "So'z tuzing";
+    case 'sentenceBuilder':
+      return 'Gap tuzing';
+    case 'fillBlank':
+      return "Bo'sh joy";
+    case 'listenChoose':
+    case 'listenType':
+      return 'Tinglang';
+    case 'speedRound':
+      return 'Tezkor';
+    case 'mistakeDrill':
+      return 'Xato ustida ish';
+    default:
+      return 'Mashq';
+  }
 }
 
 function gradeExercise(exercise: Exercise, answer: string): AnswerQuality {

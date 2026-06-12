@@ -1,9 +1,9 @@
 import { DEFAULT_SETTINGS } from '../data/defaultSettings';
-import { SEED_WORDS } from '../data/seedWords';
 import type {
   Achievement,
   DailyActivity,
   ExerciseResult,
+  GrammarProgress,
   LessonProgress,
   ReviewEvent,
   Settings,
@@ -15,7 +15,7 @@ import type {
 } from '../types';
 
 const DB_NAME = 'ruscha-tez-db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 type StoreName =
   | 'words'
@@ -28,7 +28,8 @@ type StoreName =
   | 'achievements'
   | 'dailyActivity'
   | 'exerciseResults'
-  | 'speakingAttempts';
+  | 'speakingAttempts'
+  | 'grammarProgress';
 
 export interface ImportPayload {
   words?: Word[];
@@ -42,6 +43,7 @@ export interface ImportPayload {
   dailyActivity?: DailyActivity[];
   exerciseResults?: ExerciseResult[];
   speakingAttempts?: SpeakingAttempt[];
+  grammarProgress?: GrammarProgress[];
 }
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
@@ -114,6 +116,9 @@ function openDb() {
         speakingAttempts.createIndex('created_at', 'created_at');
         speakingAttempts.createIndex('mode', 'mode');
       }
+      if (!db.objectStoreNames.contains('grammarProgress')) {
+        db.createObjectStore('grammarProgress', { keyPath: 'topic_id' });
+      }
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -152,13 +157,32 @@ async function withStore<T>(storeName: StoreName, mode: IDBTransactionMode, call
   });
 }
 
+/**
+ * So'zlar bazasini yuklaydi. Bundle hajmini kichik saqlash uchun words.json
+ * endi runtime'da tarmoqdan olinadi; tarmoq bo'lmasa IndexedDB'dagi eski
+ * nusxa ishlatiladi, u ham bo'lmasa lazy chunk fallback yuklanadi.
+ */
 export async function seedDatabase() {
   const existing = await getWords();
-  if (existing.length >= SEED_WORDS.length) return;
+  if (existing.length >= 2900) return;
+
+  let words: Word[] = [];
+  try {
+    const response = await fetch('/words.json');
+    if (response.ok) words = (await response.json()) as Word[];
+  } catch {
+    words = [];
+  }
+  if (!words.length) {
+    if (existing.length) return;
+    const module = await import('../data/seedWords');
+    words = module.SEED_WORDS;
+  }
+  if (!words.length || words.length < existing.length) return;
 
   await withStore('words', 'readwrite', async (store) => {
     await requestToPromise(store.clear());
-    for (const word of SEED_WORDS) {
+    for (const word of words) {
       store.put(word);
     }
   });
@@ -314,6 +338,23 @@ export async function saveSpeakingAttempt(attempt: SpeakingAttempt) {
   });
 }
 
+export async function getGrammarProgress() {
+  const items = await withStore<GrammarProgress[]>('grammarProgress', 'readonly', (store) =>
+    requestToPromise(store.getAll() as IDBRequest<GrammarProgress[]>),
+  );
+  return Object.fromEntries(items.map((item) => [item.topic_id, item]));
+}
+
+export async function saveGrammarProgress(progress: GrammarProgress) {
+  await withStore('grammarProgress', 'readwrite', (store) => {
+    store.put(progress);
+  });
+}
+
+export async function clearGrammarProgress() {
+  await withStore('grammarProgress', 'readwrite', (store) => requestToPromise(store.clear()));
+}
+
 export async function saveTutorMessage(message: TutorChatMessage) {
   await withStore('tutorMessages', 'readwrite', (store) => {
     store.put(message);
@@ -332,7 +373,7 @@ export async function clearTutorMessages() {
 }
 
 export async function exportData() {
-  const [words, progress, settings, events, tutorMessages, userProfile, lessonProgress, achievements, dailyActivity, exerciseResults, speakingAttempts] =
+  const [words, progress, settings, events, tutorMessages, userProfile, lessonProgress, achievements, dailyActivity, exerciseResults, speakingAttempts, grammarProgress] =
     await Promise.all([
     getWords(),
     getProgress(),
@@ -345,6 +386,7 @@ export async function exportData() {
     getDailyActivity(),
     getExerciseResults(),
     getSpeakingAttempts(),
+    getGrammarProgress(),
   ]);
   return {
     exported_at: new Date().toISOString(),
@@ -359,6 +401,7 @@ export async function exportData() {
     dailyActivity: Object.values(dailyActivity),
     exerciseResults,
     speakingAttempts,
+    grammarProgress: Object.values(grammarProgress),
   };
 }
 
@@ -407,6 +450,12 @@ export async function importData(payload: ImportPayload) {
     await withStore('speakingAttempts', 'readwrite', async (store) => {
       await requestToPromise(store.clear());
       for (const item of payload.speakingAttempts ?? []) store.put(item);
+    });
+  }
+  if (payload.grammarProgress) {
+    await withStore('grammarProgress', 'readwrite', async (store) => {
+      await requestToPromise(store.clear());
+      for (const item of payload.grammarProgress ?? []) store.put(item);
     });
   }
 }

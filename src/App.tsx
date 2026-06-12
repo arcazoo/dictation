@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Layout, type View } from './components/Layout';
+import { LoadingState } from './components/ui/LoadingState';
 import { useAppData } from './hooks/useAppData';
 import { buildLearningPath } from './lib/adaptiveLesson';
 import { ErrorsPage } from './pages/ErrorsPage';
 import { LearningPathPage } from './pages/LearningPathPage';
 import { LessonPlayerPage } from './pages/LessonPlayerPage';
-import { GrammarPage } from './pages/GrammarPage';
 import { SectionsPage } from './pages/SectionsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
 import { StudyPage } from './pages/StudyPage';
 import { TestPage } from './pages/TestPage';
 import { TodayPage } from './pages/TodayPage';
-import { TutorPage } from './pages/TutorPage';
+
+// Katta sahifalar alohida chunk bo'lib yuklanadi
+const GrammarPage = lazy(() => import('./pages/GrammarPage').then((m) => ({ default: m.GrammarPage })));
+const GrammarTopicPage = lazy(() => import('./pages/GrammarTopicPage').then((m) => ({ default: m.GrammarTopicPage })));
+const TutorPage = lazy(() => import('./pages/TutorPage').then((m) => ({ default: m.TutorPage })));
 import type { LearningLesson, LessonProgress, StudySource } from './types';
 
-const views: View[] = ['today', 'path', 'lesson', 'sections', 'grammar', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
+const views: View[] = ['today', 'path', 'lesson', 'sections', 'grammar', 'grammarTopic', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
 
 function getHashView(): View {
   const hash = window.location.hash.replace('#', '') as View;
@@ -122,7 +126,16 @@ export default function App() {
       {view === 'sections' ? (
         <SectionsPage words={data.words} progress={data.progress} startStudy={startStudy} startTest={startTest} />
       ) : null}
-      {view === 'grammar' ? <GrammarPage openAi={openAiWithPrompt} /> : null}
+      {view === 'grammar' ? (
+        <Suspense fallback={<LoadingState />}>
+          <GrammarPage setView={setView} />
+        </Suspense>
+      ) : null}
+      {view === 'grammarTopic' ? (
+        <Suspense fallback={<LoadingState />}>
+          <GrammarTopicPage setView={setView} />
+        </Suspense>
+      ) : null}
       {view === 'study' ? (
         <StudyPage
           words={data.words}
@@ -143,6 +156,7 @@ export default function App() {
         />
       ) : null}
       {view === 'ai' ? (
+        <Suspense fallback={<LoadingState />}>
         <TutorPage
           words={data.words}
           progress={data.progress}
@@ -155,6 +169,7 @@ export default function App() {
           draftPrompt={aiDraft}
           clearDraftPrompt={() => setAiDraft('')}
         />
+        </Suspense>
       ) : null}
       {view === 'errors' ? (
         <ErrorsPage

@@ -3,13 +3,16 @@ export type WordStatus = 'new' | 'learning' | 'difficult' | 'known' | 'mastered'
 export type ReviewResult = 'known' | 'hard' | 'unknown';
 export type AnswerQuality = 'correct' | 'close' | 'wrong';
 export type ExerciseType =
+  | 'introduce'
   | 'multipleChoiceRuUz'
   | 'multipleChoiceUzRu'
   | 'writtenRecall'
+  | 'writtenReverse'
   | 'wordBuilder'
   | 'sentenceBuilder'
   | 'fillBlank'
   | 'listenChoose'
+  | 'listenType'
   | 'mistakeDrill'
   | 'speedRound'
   | 'aiExample';
@@ -40,10 +43,24 @@ export interface Word {
   category: Category;
   category_ru: string;
   page: number;
+  /** Urg'u belgisi bilan yozilgan shakl: молоко́ */
+  stressed?: string;
+  /** Otlar uchun rod */
+  gender?: 'м' | 'ж' | 'с';
+  /** Noto'g'ri ko'plik shakli */
+  plural?: string;
+  /** Fe'llar uchun aspekt jufti (НСВ <-> СВ) */
+  aspect_pair?: string;
+  /** Fe'l tuslanish turi */
+  conjugation_type?: 1 | 2;
   example_ru?: string;
   example_uz?: string;
 }
 
+/**
+ * SRS progress. Legacy maydonlar (level, ease_factor...) eski ma'lumotlar bilan
+ * moslik uchun saqlanadi; FSRS maydonlari yangi scheduler uchun.
+ */
 export interface UserProgress {
   word_id: string;
   level: number;
@@ -57,6 +74,13 @@ export interface UserProgress {
   lapses?: number;
   average_response_ms?: number;
   confidence?: number;
+  // FSRS card maydonlari
+  fsrs_stability?: number;
+  fsrs_difficulty?: number;
+  fsrs_reps?: number;
+  fsrs_lapses?: number;
+  fsrs_state?: number;
+  fsrs_last_review?: string;
 }
 
 export interface Settings {
@@ -205,6 +229,100 @@ export interface SpeakingAttempt {
   ieltsBand?: number;
 }
 
+// ===================== Grammatika kursi =====================
+
+export type GrammarLevel = 'A1' | 'A2' | 'B1';
+export type GrammarExerciseType =
+  | 'choose'
+  | 'fillBlank'
+  | 'transform'
+  | 'translate'
+  | 'caseDetector'
+  | 'conjugationDrill'
+  | 'sentenceBuilder'
+  | 'errorHunt';
+
+export interface GrammarExercise {
+  id: string;
+  type: GrammarExerciseType;
+  prompt: string;
+  answer: string;
+  choices?: string[];
+  /** sentenceBuilder uchun aralashtiriladigan tokenlar */
+  tokens?: string[];
+  explanation_uz: string;
+}
+
+export interface GrammarSection {
+  heading: string;
+  body: string;
+  /** Oddiy jadval: birinchi qator sarlavha */
+  table?: string[][];
+}
+
+export interface GrammarExample {
+  ru: string;
+  uz: string;
+  note?: string;
+}
+
+export interface GrammarMistake {
+  wrong: string;
+  right: string;
+  why_uz: string;
+}
+
+export interface GrammarDialogueLine {
+  speaker: string;
+  ru: string;
+  uz: string;
+}
+
+export interface GrammarTopic {
+  id: string;
+  module: number;
+  order: number;
+  level: GrammarLevel;
+  title: string;
+  subtitle: string;
+  theory: GrammarSection[];
+  /** O'zbek tili bilan solishtirish */
+  comparisonWithUzbek?: string;
+  examples: GrammarExample[];
+  commonMistakes: GrammarMistake[];
+  exercises: GrammarExercise[];
+  miniDialogue?: GrammarDialogueLine[];
+}
+
+export interface GrammarModuleMeta {
+  id: number;
+  title: string;
+  subtitle: string;
+  level: GrammarLevel;
+  icon: string;
+}
+
+export interface GrammarProgress {
+  topic_id: string;
+  exercises_done: number;
+  correct_count: number;
+  wrong_count: number;
+  best_score: number;
+  completed: boolean;
+  last_seen: string;
+  next_review: string;
+}
+
+export interface LearningMethod {
+  id: string;
+  title: string;
+  goal: string;
+  steps: string[];
+  bestFor: string;
+}
+
+// ===================== App holati =====================
+
 export interface AppState {
   words: Word[];
   progress: Record<string, UserProgress>;
@@ -217,6 +335,7 @@ export interface AppState {
   dailyActivity: Record<string, DailyActivity>;
   exerciseResults: ExerciseResult[];
   speakingAttempts: SpeakingAttempt[];
+  grammarProgress: Record<string, GrammarProgress>;
 }
 
 export interface CategoryMeta {
@@ -240,7 +359,8 @@ export interface LearningLesson {
   subtitle: string;
   category?: Category;
   page?: number;
-  type: 'page' | 'review' | 'mixedChallenge' | 'mistakeRepair';
+  type: 'page' | 'review' | 'mixedChallenge' | 'mistakeRepair' | 'grammar';
+  grammarTopicId?: string;
   status: LessonStatus;
   xp: number;
   wordIds: string[];
@@ -265,35 +385,4 @@ export interface Exercise {
   tokens?: string[];
   sentence?: string;
   blank?: string;
-}
-
-export type GrammarLevel = 'beginner' | 'elementary' | 'intermediate';
-export type GrammarExerciseType = 'choose' | 'fillBlank' | 'transform' | 'translate';
-
-export interface GrammarExercise {
-  id: string;
-  type: GrammarExerciseType;
-  prompt: string;
-  answer: string;
-  choices?: string[];
-  explanation_uz: string;
-}
-
-export interface GrammarTopic {
-  id: string;
-  title: string;
-  subtitle: string;
-  level: GrammarLevel;
-  category: 'foundation' | 'nouns' | 'verbs' | 'sentence' | 'cases' | 'speech';
-  rule_uz: string;
-  examples: Array<{ ru: string; uz: string; note?: string }>;
-  exercises: GrammarExercise[];
-}
-
-export interface LearningMethod {
-  id: string;
-  title: string;
-  goal: string;
-  steps: string[];
-  bestFor: string;
 }

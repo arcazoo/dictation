@@ -1,0 +1,307 @@
+import type { GrammarTopic } from '../../types';
+
+/** Modul 1 — Asos: alifbo, talaffuz, olmoshlar, eng sodda gaplar (A1.0) */
+export const MODULE_1: GrammarTopic[] = [
+  {
+    id: 'm1-alphabet',
+    module: 1,
+    order: 1,
+    level: 'A1',
+    title: 'Alifbo va tovushlar',
+    subtitle: '33 harf, harf-tovush mosligi',
+    theory: [
+      {
+        heading: 'Rus alifbosi',
+        body: "Rus alifbosida 33 harf bor: 10 unli (а, е, ё, и, о, у, ы, э, ю, я), 21 undosh va 2 belgi (ь, ъ). Ko'p harflar kirill yozuvidagi o'zbekchaga o'xshaydi, lekin ы, э, щ, ъ harflari yangi.",
+      },
+      {
+        heading: "O'zbek tilida yo'q tovushlar",
+        body: "ы — til orqa qismida aytiladigan 'i' (мы, ты, сын). щ — yumshoq va cho'ziq 'shsh' (щи, борщ). Bu ikkisini alohida mashq qilish kerak.",
+        table: [
+          ['Harf', 'Tovush', 'Misol'],
+          ['ы', "qattiq 'i'", 'мы — biz, сын — o‘g‘il'],
+          ['щ', "yumshoq 'shsh'", 'щи — karam sho‘rva, ещё — yana'],
+          ['э', "ochiq 'e'", 'это — bu, экран — ekran'],
+          ['ё', "'yo' (doim urg'uli)", 'ёлка — archa, всё — hammasi'],
+        ],
+      },
+    ],
+    comparisonWithUzbek:
+      "O'zbek kirill alifbosini bilsangiz, rus alifbosining 90% i tanish. Farqlar: rus tilida ў, қ, ғ, ҳ yo'q; o'zbek tilida ы, щ, э (so'z boshida emas), ъ (ajratuvchi) kam ishlatiladi.",
+    examples: [
+      { ru: 'мы', uz: 'biz', note: "ы — qattiq 'i'" },
+      { ru: 'ты', uz: 'sen' },
+      { ru: 'сын', uz: "o'g'il" },
+      { ru: 'ещё', uz: 'yana', note: "щ — yumshoq 'shsh'" },
+      { ru: 'э́то', uz: 'bu' },
+      { ru: 'ёлка', uz: 'archa', note: "ё har doim urg'uli" },
+    ],
+    commonMistakes: [
+      { wrong: 'мi (мы o‘rniga)', right: 'мы', why_uz: "ы ni oddiy 'i' deb o'qimaslik kerak — til orqaroqda turadi." },
+      { wrong: 'шы', right: 'ши', why_uz: "ж va ш dan keyin doim и yoziladi, ы emas (жи-ши qoidasi)." },
+      { wrong: 'що', right: 'что', why_uz: "что so'zida ч 'sh' bo'lib o'qiladi: [shto]." },
+    ],
+    exercises: [
+      { id: 'm1-alphabet-1', type: 'choose', prompt: "Qaysi so'zda ы tovushi bor?", answer: 'сын', choices: ['сын', 'синий', 'семь', 'сюда'], explanation_uz: "сын — o'g'il; ы qattiq talaffuz qilinadi." },
+      { id: 'm1-alphabet-2', type: 'choose', prompt: "щ harfi qanday o'qiladi?", answer: "yumshoq cho'ziq shsh", choices: ["yumshoq cho'ziq shsh", "qattiq sh", 'ch', 'j'], explanation_uz: "щ = yumshoq, cho'ziq 'shsh': щи, ещё." },
+      { id: 'm1-alphabet-3', type: 'choose', prompt: "«мы» so'zi nimani anglatadi?", answer: 'biz', choices: ['biz', 'sen', 'ular', 'siz'], explanation_uz: 'мы — biz.' },
+      { id: 'm1-alphabet-4', type: 'fillBlank', prompt: 'ж va ш dan keyin doim ___ yoziladi (жи-ши qoidasi).', answer: 'и', explanation_uz: 'жи-ши qoidasi: жить, машина.' },
+      { id: 'm1-alphabet-5', type: 'choose', prompt: "ё harfi haqida qaysi gap to'g'ri?", answer: "Har doim urg'uli", choices: ["Har doim urg'uli", "Hech qachon urg'uli emas", 'Faqat fe’llarda ishlatiladi', "O'qilmaydi"], explanation_uz: "ё bor so'zda urg'u doim ё ga tushadi: ёлка, идёт." },
+      { id: 'm1-alphabet-6', type: 'translate', prompt: "Tarjima qiling: «бу» (ruscha ko'rsatish so'zi)", answer: 'это', explanation_uz: 'Bu — это. Это дом — Bu uy.' },
+      { id: 'm1-alphabet-7', type: 'choose', prompt: "«что» so'zi qanday o'qiladi?", answer: '[што]', choices: ['[што]', '[что]', '[щто]', '[чито]'], explanation_uz: "что so'zida ч tarixan 'sh' bo'lib o'qiladi." },
+      { id: 'm1-alphabet-8', type: 'choose', prompt: 'Rus alifbosida nechta harf bor?', answer: '33', choices: ['33', '29', '36', '26'], explanation_uz: '10 unli + 21 undosh + ь va ъ = 33.' },
+    ],
+  },
+  {
+    id: 'm1-stress',
+    module: 1,
+    order: 2,
+    level: 'A1',
+    title: "Urg'u va reduktsiya",
+    subtitle: "Urg'usiz о → а, е → и",
+    theory: [
+      {
+        heading: "Urg'u nima uchun muhim",
+        body: "Rus tilida urg'u erkin va harakatchan: u so'z ma'nosini o'zgartirishi mumkin (за́мок — qal'a, замо́к — qulf). Har yangi so'zni urg'usi bilan yodlang.",
+      },
+      {
+        heading: 'Reduktsiya',
+        body: "Urg'usiz bo'g'inda unlilar kuchsizlanadi: о → [a] (молоко́ → [malako]), е/я → [i] (язы́к → [yizik]). Yozuvda o'zgarmaydi, faqat talaffuzda!",
+        table: [
+          ['Yozilishi', 'Aytilishi', "Ma'nosi"],
+          ['молоко́', '[малако́]', 'sut'],
+          ['хорошо́', '[харашо́]', 'yaxshi'],
+          ['язы́к', '[йизы́к]', 'til'],
+          ['сейча́с', '[сича́с]', 'hozir'],
+        ],
+      },
+    ],
+    comparisonWithUzbek:
+      "O'zbek tilida urg'u deyarli doim oxirgi bo'g'inda va unlilar reduktsiya qilinmaydi. Rus tilida esa urg'usiz 'o' ni 'a' deb aytish majburiy — aks holda aksent kuchli seziladi.",
+    examples: [
+      { ru: 'вода́', uz: 'suv', note: "[вада́] — o urg'usiz, a bo'ladi" },
+      { ru: 'окно́', uz: 'deraza', note: '[акно́]' },
+      { ru: 'го́род', uz: 'shahar', note: "[го́рат] — ikkinchi o urg'usiz" },
+      { ru: 'за́мок / замо́к', uz: "qal'a / qulf", note: "urg'u ma'noni o'zgartiradi" },
+      { ru: 'пишу́ — пи́шешь', uz: 'yozaman — yozasan', note: "urg'u ko'chadi" },
+    ],
+    commonMistakes: [
+      { wrong: '[молоко] deb aytish', right: '[малако́]', why_uz: "Urg'usiz о doim [a] ga yaqin aytiladi." },
+      { wrong: "urg'usiz yodlash", right: "urg'u bilan yodlash", why_uz: "Noto'g'ri urg'u tushunishni qiyinlashtiradi: писа́ть (yozmoq) vs пи́сать." },
+    ],
+    exercises: [
+      { id: 'm1-stress-1', type: 'choose', prompt: "«молоко» so'zida urg'u qayerda?", answer: 'oxirgi bo‘g‘inda (молоко́)', choices: ['oxirgi bo‘g‘inda (молоко́)', 'birinchi bo‘g‘inda', 'o‘rtada', "urg'u yo'q"], explanation_uz: 'молоко́ — [малако́].' },
+      { id: 'm1-stress-2', type: 'choose', prompt: "Urg'usiz «о» qanday aytiladi?", answer: '[a] ga yaqin', choices: ['[a] ga yaqin', '[o] bo‘lib qoladi', '[u] ga yaqin', 'aytilmaydi'], explanation_uz: 'Bu reduktsiya deyiladi: вода́ → [вада́].' },
+      { id: 'm1-stress-3', type: 'choose', prompt: '«за́мок» nimani anglatadi?', answer: "qal'a", choices: ["qal'a", 'qulf', 'shahar', 'deraza'], explanation_uz: "за́мок — qal'a, замо́к — qulf. Urg'u ma'noni o'zgartiradi." },
+      { id: 'm1-stress-4', type: 'choose', prompt: "«хорошо» qanday o'qiladi?", answer: '[харашо́]', choices: ['[харашо́]', '[хорошо́]', '[хурушо́]', '[хорошу́]'], explanation_uz: "Ikkala urg'usiz о ham [a] bo'ladi." },
+      { id: 'm1-stress-5', type: 'fillBlank', prompt: "ё harfi bor so'zda urg'u doim ___ harfiga tushadi.", answer: 'ё', explanation_uz: 'идёт, ёлка, всё — ё doim urg‘uli.' },
+      { id: 'm1-stress-6', type: 'choose', prompt: "Qaysi juftlikda urg'u ma'noni o'zgartiradi?", answer: 'за́мок — замо́к', choices: ['за́мок — замо́к', 'дом — дома́шний', 'мама — папа', 'да — нет'], explanation_uz: "за́мок (qal'a) va замо́к (qulf) — bir xil yozilади, har xil ma'no." },
+      { id: 'm1-stress-7', type: 'choose', prompt: "«сейчас» og'zaki nutqda qanday eshitiladi?", answer: '[сича́с]', choices: ['[сича́с]', '[сейча́с]', '[сэйча́с]', '[сючас]'], explanation_uz: "Urg'usiz е [i] ga yaqinlashadi." },
+      { id: 'm1-stress-8', type: 'translate', prompt: 'Tarjima qiling: вода́', answer: 'suv', explanation_uz: 'вода́ — suv, [вада́] deb aytiladi.' },
+    ],
+  },
+  {
+    id: 'm1-soft-hard',
+    module: 1,
+    order: 3,
+    level: 'A1',
+    title: 'Qattiq va yumshoq undoshlar, ь va ъ',
+    subtitle: "Yumshoq belgi nima uchun kerak",
+    theory: [
+      {
+        heading: 'Yumshoqlik',
+        body: "Deyarli har bir rus undoshi qattiq yoki yumshoq bo'lishi mumkin. Undoshni yumshatadigan narsalar: е, ё, и, ю, я unlilari va ь belgisi. мать [mat'] — мат [mat] — bular har xil so'zlar!",
+        table: [
+          ['Qattiq', 'Yumshoq', 'Farq'],
+          ['мат (so‘kinish)', "мать (ona)", 'ь yumshatadi'],
+          ['брат (aka)', 'брать (olmoq)', 'ь yumshatadi'],
+          ['лук (piyoz)', 'люк (lyuk)', 'ю yumshatadi'],
+          ['нос (burun)', 'нёс (olib bordi)', 'ё yumshatadi'],
+        ],
+      },
+      {
+        heading: 'ь va ъ belgilari',
+        body: "ь (yumshoq belgi) — oldingi undoshni yumshatadi yoki ajratadi (семья — oila). ъ (qattiq belgi) — prefiks bilan ildiz orasida ajratish uchun: подъезд, объявление. Ikkalasi ham tovush emas!",
+      },
+    ],
+    comparisonWithUzbek:
+      "O'zbek tilida undosh yumshoqligi ma'no farqlamaydi, shuning uchun мать/мат farqini eshitish boshida qiyin. 'Yumshoq' undoshni aytishda til o'rta qismi tanglayga ko'tariladi — go'yo undoshdan keyin juda qisqa 'y' qo'shilganday.",
+    examples: [
+      { ru: 'мать', uz: 'ona', note: "т yumshoq [t']" },
+      { ru: 'брать', uz: 'olmoq', note: 'брат (aka) bilan adashtirmang' },
+      { ru: 'семья́', uz: 'oila', note: 'ь ajratib turadi: [sim-ya]' },
+      { ru: 'подъе́зд', uz: 'kirish (eshik)', note: 'ъ ajratuvchi' },
+      { ru: 'де́нь', uz: 'kun', note: "н yumshoq" },
+    ],
+    commonMistakes: [
+      { wrong: 'брат олмоқ ma’nosida', right: 'брать', why_uz: "ь siz брат = aka, ь bilan брать = olmoq (fe'l)." },
+      { wrong: 'семя (urug‘)', right: 'семья (oila)', why_uz: 'ь tushib qolsa boshqa so‘z bo‘lib qoladi.' },
+      { wrong: 'ь ni alohida tovush deb o‘qish', right: "ь faqat yumshatadi", why_uz: 'ь hech qachon alohida aytilmaydi.' },
+    ],
+    exercises: [
+      { id: 'm1-soft-1', type: 'choose', prompt: '«мать» nimani anglatadi?', answer: 'ona', choices: ['ona', 'so‘kinish', 'mato', 'asal'], explanation_uz: "мать — ona; мат — boshqa so'z." },
+      { id: 'm1-soft-2', type: 'choose', prompt: 'Qaysi belgi undoshni yumshatadi?', answer: 'ь', choices: ['ь', 'ъ', 'ы', 'э'], explanation_uz: 'ь — yumshoq belgi (мягкий знак).' },
+      { id: 'm1-soft-3', type: 'choose', prompt: "«olmoq» fe'li ruscha qanday yoziladi?", answer: 'брать', choices: ['брать', 'брат', 'бранить', 'братт'], explanation_uz: 'брать — olmoq, брат — aka.' },
+      { id: 'm1-soft-4', type: 'choose', prompt: 'ъ belgisi qayerda ishlatiladi?', answer: 'prefiks va ildiz orasida ajratish uchun', choices: ['prefiks va ildiz orasida ajratish uchun', "so'z oxirida yumshatish uchun", "urg'u belgilash uchun", "ko'plik yasash uchun"], explanation_uz: 'подъезд, объявление — ъ ajratib turadi.' },
+      { id: 'm1-soft-5', type: 'fillBlank', prompt: 'Oila — сем___я', answer: 'ь', explanation_uz: 'семья — ь ajratuvchi vazifasida.' },
+      { id: 'm1-soft-6', type: 'choose', prompt: 'Qaysi unlilar undoshni yumshatadi?', answer: 'е, ё, и, ю, я', choices: ['е, ё, и, ю, я', 'а, о, у, ы, э', 'faqat и', 'faqat я'], explanation_uz: "Bu 5 unli oldingi undoshni yumshatadi; а, о, у, ы, э — qattiq qoldiradi." },
+      { id: 'm1-soft-7', type: 'choose', prompt: '«лук» va «люк» farqi nimada?', answer: 'л qattiq/yumshoq', choices: ['л qattiq/yumshoq', "urg'uda", "ma'nosi bir xil", 'к da'], explanation_uz: 'лук [luk] — piyoz, люк [l‘uk] — lyuk: ю л ni yumshatadi.' },
+      { id: 'm1-soft-8', type: 'translate', prompt: 'Tarjima qiling: день', answer: 'kun', explanation_uz: "день — kun; so'z oxiridagi н yumshoq." },
+    ],
+  },
+  {
+    id: 'm1-pronouns',
+    module: 1,
+    order: 4,
+    level: 'A1',
+    title: 'Shaxs olmoshlari va «это»',
+    subtitle: 'я, ты, он, она, оно, мы, вы, они',
+    theory: [
+      {
+        heading: 'Shaxs olmoshlari',
+        body: "8 ta shaxs olmoshi bor. вы ikki vazifada: ko'plik 'siz(lar)' va hurmat 'Siz'. Notanish va katta yoshli odamlarga doim вы deyiladi.",
+        table: [
+          ['Ruscha', "O'zbekcha", 'Izoh'],
+          ['я', 'men', ''],
+          ['ты', 'sen', "yaqin do'st, bola"],
+          ['он / она́ / оно́', 'u', 'rodga qarab'],
+          ['мы', 'biz', ''],
+          ['вы', 'siz / sizlar', 'hurmat ham'],
+          ['они́', 'ular', ''],
+        ],
+      },
+      {
+        heading: '«Это» bilan gaplar',
+        body: "Это + ot = 'Bu — ...'. Eng sodda gap qolipi: Это дом (Bu uy). Savol: Что это? (Bu nima?), Кто это? (Bu kim?).",
+      },
+    ],
+    comparisonWithUzbek:
+      "O'zbek tilidagi 'u' rus tilida uchga bo'linadi: он (erkak rod), она (ayol rod), оно (o'rta rod). Predmetlar ham rodga ega: стол — он, книга — она, окно — оно.",
+    examples: [
+      { ru: 'Э́то дом.', uz: 'Bu — uy.' },
+      { ru: 'Кто э́то? — Э́то мой брат.', uz: 'Bu kim? — Bu mening akam.' },
+      { ru: 'Что э́то? — Э́то кни́га.', uz: 'Bu nima? — Bu kitob.' },
+      { ru: 'Где он? — Он до́ма.', uz: 'U qayerda? — U uyda.' },
+      { ru: 'Вы студе́нт?', uz: 'Siz talabamisiz?', note: 'hurmat shakli' },
+    ],
+    commonMistakes: [
+      { wrong: 'Он книга', right: 'Она (книга)', why_uz: "книга — ayol rod, shuning uchun 'она'." },
+      { wrong: 'ты ni hammaga ishlatish', right: 'notanishlarga вы', why_uz: "Rus madaniyatida notanish odamga ты deyish qo'pollik." },
+      { wrong: 'Это есть дом', right: 'Это дом', why_uz: "Hozirgi zamonda 'есть' (is) ishlatilmaydi." },
+    ],
+    exercises: [
+      { id: 'm1-pron-1', type: 'choose', prompt: "«biz» ruscha qanday?", answer: 'мы', choices: ['мы', 'вы', 'они', 'я'], explanation_uz: 'мы — biz.' },
+      { id: 'm1-pron-2', type: 'choose', prompt: 'книга haqida gapirganda qaysi olmosh ishlatiladi?', answer: 'она', choices: ['она', 'он', 'оно', 'они'], explanation_uz: 'книга — ayol rod → она.' },
+      { id: 'm1-pron-3', type: 'choose', prompt: "Notanish katta odamga qanday murojaat qilinadi?", answer: 'вы', choices: ['вы', 'ты', 'он', 'они'], explanation_uz: 'вы — hurmat shakli.' },
+      { id: 'm1-pron-4', type: 'fillBlank', prompt: '___ это? — Это моя сестра.', answer: 'Кто', explanation_uz: "Odam haqida so'ralganda Кто (kim) ishlatiladi." },
+      { id: 'm1-pron-5', type: 'fillBlank', prompt: '___ это? — Это стол.', answer: 'Что', explanation_uz: "Predmet haqida — Что (nima)." },
+      { id: 'm1-pron-6', type: 'translate', prompt: 'Tarjima qiling: «Bu — kitob.»', answer: 'Это книга', explanation_uz: "Это + ot. 'есть' kerak emas." },
+      { id: 'm1-pron-7', type: 'choose', prompt: 'окно haqida qaysi olmosh?', answer: 'оно', choices: ['оно', 'он', 'она', 'оны'], explanation_uz: "окно — o'rta rod → оно." },
+      { id: 'm1-pron-8', type: 'sentenceBuilder', prompt: "Gap tuzing: «Bu mening akam»", answer: 'Это мой брат', tokens: ['брат', 'Это', 'мой'], explanation_uz: 'Это мой брат.' },
+    ],
+  },
+  {
+    id: 'm1-no-be',
+    module: 1,
+    order: 5,
+    level: 'A1',
+    title: "«Bo'lmoq» fe'lisiz gaplar",
+    subtitle: 'Я студент. Он врач.',
+    theory: [
+      {
+        heading: "Hozirgi zamonda 'to be' yo'q",
+        body: "Ingliz tilidagi am/is/are rus tilining hozirgi zamonida ishlatilmaydi: Я студент (Men talabaman), Он врач (U shifokor). O'tgan zamonda был/была́/бы́ло/бы́ли, kelasi zamonda буду/будешь... paydo bo'ladi.",
+        table: [
+          ['Zamon', 'Misol', 'Tarjima'],
+          ['Hozirgi', 'Я до́ма', 'Men uydaman'],
+          ["O'tgan", 'Я был до́ма', 'Men uyda edim'],
+          ['Kelasi', 'Я бу́ду до́ма', "Men uyda bo'laman"],
+        ],
+      },
+      {
+        heading: 'Tire qachon qo‘yiladi',
+        body: "Ikkala tomon ham ot bo'lsa, yozuvda tire qo'yish mumkin: Москва́ — столи́ца Росси́и (Moskva — Rossiya poytaxti).",
+      },
+    ],
+    comparisonWithUzbek:
+      "O'zbek tiliga juda o'xshash! 'Men talabaman' — Я студент: o'zbekcha -man qo'shimchasi ham, ruscha 'to be' ham hozirgi zamonda alohida so'z emas. Bu mavzu o'zbeklar uchun oson.",
+    examples: [
+      { ru: 'Я студе́нт.', uz: 'Men talabaman.' },
+      { ru: 'Он врач.', uz: 'U shifokor.' },
+      { ru: 'Мы до́ма.', uz: 'Biz uydamiz.' },
+      { ru: 'Она́ была́ в Москве́.', uz: "U Moskvada bo'lgan edi.", note: "o'tgan zamonda быть keladi" },
+      { ru: 'За́втра я бу́ду на рабо́те.', uz: 'Ertaga men ishda bo‘laman.' },
+    ],
+    commonMistakes: [
+      { wrong: 'Я есть студент', right: 'Я студент', why_uz: "Hozirgi zamonda 'есть' bog'lovchi sifatida ishlatilmaydi." },
+      { wrong: 'Он быть врач', right: 'Он врач', why_uz: 'Infinitiv быть hozirgi zamonda kerak emas.' },
+      { wrong: 'Она был дома', right: 'Она была дома', why_uz: "O'tgan zamonda быть rodga moslashadi: он был, она была." },
+    ],
+    exercises: [
+      { id: 'm1-be-1', type: 'translate', prompt: 'Tarjima qiling: «Men talabaman»', answer: 'Я студент', explanation_uz: "Hozirgi zamonda bog'lovchi yo'q." },
+      { id: 'm1-be-2', type: 'choose', prompt: "Qaysi gap to'g'ri?", answer: 'Он врач', choices: ['Он врач', 'Он есть врач', 'Он быть врач', 'Он врачом'], explanation_uz: 'Hozirgi zamon: Он врач.' },
+      { id: 'm1-be-3', type: 'fillBlank', prompt: 'Вчера я ___ дома. (быть, erkak)', answer: 'был', explanation_uz: "O'tgan zamon erkak rod: был." },
+      { id: 'm1-be-4', type: 'fillBlank', prompt: 'Завтра мы ___ в школе. (быть)', answer: 'будем', explanation_uz: 'Kelasi zamon: мы будем.' },
+      { id: 'm1-be-5', type: 'transform', prompt: "O'tgan zamonga o'tkazing: «Она дома»", answer: 'Она была дома', explanation_uz: 'она → была.' },
+      { id: 'm1-be-6', type: 'translate', prompt: 'Tarjima qiling: «Biz uydamiz»', answer: 'Мы дома', explanation_uz: 'Мы дома — juda sodda!' },
+      { id: 'm1-be-7', type: 'errorHunt', prompt: "Xatoni toping va to'g'rilang: «Я есть учитель»", answer: 'Я учитель', explanation_uz: "'есть' ortiqcha." },
+      { id: 'm1-be-8', type: 'sentenceBuilder', prompt: 'Gap tuzing: «Moskva — Rossiya poytaxti»', answer: 'Москва столица России', tokens: ['столица', 'Москва', 'России'], explanation_uz: 'Москва — столица России.' },
+    ],
+  },
+  {
+    id: 'm1-intonation',
+    module: 1,
+    order: 6,
+    level: 'A1',
+    title: 'Savol intonatsiyasi',
+    subtitle: "So'roq so'zsiz savol berish",
+    theory: [
+      {
+        heading: 'Intonatsiya bilan savol',
+        body: "Rus tilida 'ha/yo'q' savoli ko'pincha faqat intonatsiya bilan beriladi — so'z tartibi o'zgarmaydi: Это дом. (darak) / Это дом? (savol). Savolda ovoz so'ralayotgan so'zda keskin ko'tariladi.",
+      },
+      {
+        heading: "So'roq so'zli savol",
+        body: "Кто, что, где, куда, когда, почему, как, сколько bilan boshlanadigan savolda ovoz so'roq so'zida ko'tarilib, keyin pasayadi: Где ты живёшь?",
+        table: [
+          ["So'roq so'zi", "Ma'nosi", 'Misol'],
+          ['кто', 'kim', 'Кто это?'],
+          ['что', 'nima', 'Что это?'],
+          ['где', 'qayerda', 'Где ты?'],
+          ['куда', 'qayerga', 'Куда ты идёшь?'],
+          ['когда', 'qachon', 'Когда урок?'],
+          ['как', 'qanday', 'Как дела?'],
+        ],
+      },
+    ],
+    comparisonWithUzbek:
+      "O'zbek tilida savol uchun '-mi' qo'shimchasi bor: 'Bu uymi?'. Rus tilida bunday qo'shimcha yo'q — faqat intonatsiya: Это дом?. (Rasmiy uslubda 'ли' yuklamasi ham bor, keyinroq o'rganiladi.)",
+    examples: [
+      { ru: 'Это дом?', uz: 'Bu uymi?', note: "ovoz 'дом' da ko'tariladi" },
+      { ru: 'Ты студе́нт?', uz: 'Sen talabamisan?' },
+      { ru: 'Как дела́?', uz: 'Qalaysan? / Ishlar qanday?' },
+      { ru: 'Где ты живёшь?', uz: 'Qayerda yashaysan?' },
+      { ru: 'Ско́лько э́то сто́ит?', uz: 'Bu qancha turadi?' },
+    ],
+    commonMistakes: [
+      { wrong: 'Это дом ми?', right: 'Это дом?', why_uz: "Rus tilida '-mi' yo'q, intonatsiya kifoya." },
+      { wrong: 'Где ты живёшь? (tekis ohangda)', right: "ovozni где da ko'tarish", why_uz: "Noto'g'ri intonatsiya savol ekanini bildirmaydi." },
+    ],
+    exercises: [
+      { id: 'm1-int-1', type: 'choose', prompt: "«Qayerda» ruscha qanday?", answer: 'где', choices: ['где', 'куда', 'когда', 'кто'], explanation_uz: 'где — qayerda (joy), куда — qayerga (yo‘nalish).' },
+      { id: 'm1-int-2', type: 'choose', prompt: '«Qancha turadi?» qanday so‘raladi?', answer: 'Сколько это стоит?', choices: ['Сколько это стоит?', 'Когда это стоит?', 'Где это стоит?', 'Что это стоит?'], explanation_uz: 'сколько — qancha.' },
+      { id: 'm1-int-3', type: 'translate', prompt: 'Tarjima qiling: «Bu uymi?»', answer: 'Это дом?', explanation_uz: "Faqat intonatsiya — '-mi' uchun alohida so'z yo'q." },
+      { id: 'm1-int-4', type: 'fillBlank', prompt: '___ ты идёшь? — В школу.', answer: 'Куда', explanation_uz: "Javob yo'nalish (maktabGA) bo'lgani uchun куда." },
+      { id: 'm1-int-5', type: 'fillBlank', prompt: '___ дела? — Хорошо!', answer: 'Как', explanation_uz: 'Как дела? — eng mashhur savol.' },
+      { id: 'm1-int-6', type: 'choose', prompt: "Intonatsiya savoli «Ты дома?»da ovoz qayerda ko'tariladi?", answer: 'дома so‘zida', choices: ['дома so‘zida', 'ты so‘zida', 'hech qayerda', 'gap oxirida pasayadi'], explanation_uz: "So'ralayotgan so'zda ovoz ko'tariladi." },
+      { id: 'm1-int-7', type: 'translate', prompt: 'Tarjima qiling: «Qachon dars?»', answer: 'Когда урок?', explanation_uz: 'когда — qachon.' },
+      { id: 'm1-int-8', type: 'errorHunt', prompt: 'Xatoni toping: «Это книга ми?»', answer: 'Это книга?', explanation_uz: "'ми' degan yuklama rus tilida yo'q." },
+    ],
+    miniDialogue: [
+      { speaker: 'A', ru: 'Привет! Как дела?', uz: 'Salom! Qalaysan?' },
+      { speaker: 'B', ru: 'Хорошо, спасибо. А у тебя?', uz: 'Yaxshi, rahmat. O‘zingchi?' },
+      { speaker: 'A', ru: 'Тоже хорошо. Ты сейчас дома?', uz: 'Men ham yaxshi. Hozir uydamisan?' },
+      { speaker: 'B', ru: 'Нет, я на работе.', uz: 'Yo‘q, ishdaman.' },
+    ],
+  },
+];

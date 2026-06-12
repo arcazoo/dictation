@@ -16,6 +16,7 @@ function compactPayload(payload) {
     dailyActivity: payload?.dailyActivity || [],
     exerciseResults: (payload?.exerciseResults || []).slice(-2000),
     speakingAttempts: (payload?.speakingAttempts || []).slice(-500),
+    grammarProgress: payload?.grammarProgress || [],
   };
 }
 

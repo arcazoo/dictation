@@ -1,119 +1,88 @@
-# Ruscha Tez
+# Ruscha Tez 3.0
 
-Ruscha Tez - ruscha-o'zbekcha so'zlarni active recall, spaced repetition, xato asosida takrorlash va yozma recall orqali yodlash uchun mobile-first PWA.
+Ruscha Tez — ruscha-o'zbekcha so'zlarni va **to'liq rus tili grammatikasini (A1→B1)** o'rganish uchun mobile-first web app. FSRS-5 spaced repetition, active recall, Duolingo-uslubidagi Learning Path, gamification va Gemini AI Coach bilan.
 
 ## Stack
 
-- React + Vite + TypeScript
-- Tailwind CSS
-- IndexedDB offline database
-- `manifest.json` install metadata
-- PDF import script: `scripts/import-pdfs.mjs`
+- React 19 + Vite 7 + TypeScript
+- Zustand — markaziy holat boshqaruvi
+- ts-fsrs — FSRS-5 spaced repetition scheduler
+- Tailwind CSS — dizayn tokenlari bilan
+- IndexedDB — offline progress (v5 schema)
+- Vitest — unit testlar
+- Vercel serverless + Firebase Firestore backup + Gemini AI
 
 ## Ishga tushirish
 
 ```bash
 npm install
-npm run import:pdf
 npm run dev
 ```
 
-Production build va oddiy server:
+Testlar va production build:
 
 ```bash
+npm test
 npm run build
-npm run server
+npm run server   # http://127.0.0.1:4173
 ```
 
-Server `http://127.0.0.1:4173` da ishlaydi:
+## Grammatika kursi
 
-- `GET /api/health`
-- `GET /api/backup`
-- `POST /api/backup`
+`src/content/grammar/` — 8 modul, 45 mavzu, ~370 mashq:
 
-## Vercel serverless
+1. **Asos** — alifbo, urg'u/reduktsiya, yumshoqlik, olmoshlar, intonatsiya
+2. **Ot va rod** — rod, ko'plik, jonlilik, egalik
+3. **Kelishiklar** — 6 kelishik, har biri alohida mavzu + aralash drill
+4. **Fe'l** — I/II tuslanish, noto'g'ri fe'llar, zamonlar, **aspekt (НСВ/СВ)**, -ся, buyruq
+5. **Harakat fe'llari** — идти/ходить, juftliklar, prefikslar, transport
+6. **Sifat va ravish** — moslashuv, qisqa shakl, qiyoslash
+7. **Sintaksis** — savollar, который, чтобы/если, bilvosita nutq, sonlar, modallar
+8. **Nutq amaliyoti** — kesim, ravishdosh, yuklamalar, muloqot odobi, dialoglar
 
-Vercel productionda `server/index.mjs` ishlatilmaydi. Uning o'rniga `api/` ichidagi serverless funksiyalar ishlaydi:
+Har mavzuda: nazariya jadvallar bilan, **o'zbek tili bilan solishtirish**, urg'u belgili misollar (TTS bilan), o'zbeklar qiladigan tipik xatolar, 8-12 ta drill mashq, mini dialog. Progress IndexedDB'da saqlanadi va 3-7 kunlik SRS interval bilan takrorga chiqadi.
 
-- `api/health.js`
-- `api/backup.js`
-- `api/tutor.js`
-
-Vercel dashboardda quyidagi Environment Variables qo'shiladi:
-
-```text
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_API_KEY=your-firebase-web-api-key
-FIREBASE_BACKUP_COLLECTION=ruschaTezBackups
-FIREBASE_BACKUP_DOCUMENT=default
-GEMINI_API_KEY=your-google-ai-studio-api-key
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-Firestore rules MVP uchun read/write ruxsat berishi kerak. Real foydalanuvchilar uchun login va auth rules qo'shish kerak bo'ladi.
-
-`npm run import:pdf` quyidagi PDFlardan so'zlarni chiqarib `src/data/seedWords.ts` va `public/words.json` fayllarini yaratadi:
-
-- `C:/Users/Ikhti/Downloads/Telegram Desktop/имя_существительное_1000(1)(1)(1) (2).pdf`
-- `C:/Users/Ikhti/Downloads/Telegram Desktop/имя_прилагательное_1000(1) (2).pdf`
-- `C:/Users/Ikhti/Downloads/Telegram Desktop/Глаголы_1000_та(1)(1) (2).pdf`
-
-PDF matni jadvaldan boshqacha chiqsa, `scripts/import-pdfs.mjs` ichidagi `parseLine` heuristikasini moslash kerak bo'ladi.
-
-## Tuzilma
+## Arxitektura
 
 ```text
 src/
-  components/      reusable UI
-  data/            kategoriya, default settings, seed words
-  db/              IndexedDB, export/import
-  hooks/           app state orchestration
-  lib/             SRS, lesson planner, written answer grading
-  pages/           Home, Sections, Study, Test, Errors, Stats, Settings
-public/
-  manifest.json
-  icon.svg
-scripts/
-  import-pdfs.mjs
+  store/appStore.ts      Zustand — butun app holati va amallar
+  content/grammar/       grammatika kursi kontenti (modul fayllari)
+  lib/
+    srs.ts               FSRS-5 scheduler (legacy progressdan avtomatik migratsiya)
+    exercises.ts         Exercise Engine v2 (introduce -> recognition -> production)
+    answer.ts            yozma javob baholash (lotin/kirill, Levenshtein)
+  db/indexedDb.ts        IndexedDB v5 (grammarProgress qo'shildi)
+  pages/                 sahifalar (GrammarPage, GrammarTopicPage yangi)
+  hooks/useAppData.ts    store ustidagi moslik adapteri
 ```
 
-## Database modeli
+So'zlar bazasi (2980 so'z) endi bundle ichida emas — `public/words.json` runtime'da yuklanadi va IndexedDB'da keshlash qilinadi (offline fallback: lazy chunk).
 
-IndexedDB storelari:
+## Vercel serverless
 
-- `words`: `Word`
-- `progress`: `UserProgress`
-- `settings`: `Settings`
-- `events`: review/test tarixi
+- `api/health.js`, `api/backup.js` (endi grammarProgress ham saqlaydi), `api/tutor.js`
 
-SRS level algoritmi:
+Environment variables:
 
-- Level 0: yangi yoki noto'g'ri, 5-15 daqiqada qaytadi
-- Level 1: 1 kun
-- Level 2: 3 kun
-- Level 3: 7 kun
-- Level 4: 15 kun
-- Level 5: 30 kun
+```text
+FIREBASE_PROJECT_ID=...
+FIREBASE_API_KEY=...
+FIREBASE_BACKUP_COLLECTION=ruschaTezBackups
+FIREBASE_BACKUP_DOCUMENT=default
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+```
 
-## MVP ekranlari
+## SRS
 
-- Bugungi dars
-- List tanlash: kategoriya, varaq, xato so'zlar
-- Bo'limlar va varaq statuslari
-- Flashcard
-- 4 variantli test
-- Yozma javob
-- Xatolar
-- Statistika
-- Settings
+ts-fsrs (FSRS-5): har so'z uchun individual stability/difficulty, request_retention 0.9, maksimal interval 365 kun. Eski 6-darajali jadvaldan saqlangan progress birinchi javobda avtomatik FSRS kartasiga aylanadi — foydalanuvchi ma'lumotlari yo'qolmaydi.
 
-## Keyingi kengaytirish
+Javob → baho: wrong→Again, close/hard→Hard, correct→Good, tez+ishonchli correct→Easy.
 
-- Supabase/Firebase cloud sync
-- Web push notification
-- Har bir so'z uchun misol gap
-- AI orqali gap yaratish
-- Leaderboard
-- PDF import UI
-# dictation
-# dictation
+## Keyingi qadamlar
+
+- Lug'atni boyitish: urg'u belgilari, rod, aspekt juftlari, misol gaplar (`Word` tipida maydonlar tayyor)
+- Firebase Auth + har user uchun alohida backup document
+- AI structured quiz JSON'ni LessonPlayer bilan ulash
+- Onboarding + daraja testi

@@ -1,7 +1,18 @@
+import { createEmptyCard, fsrs, generatorParameters, Rating, State, type Card, type Grade } from 'ts-fsrs';
 import type { AnswerQuality, ReviewResult, UserProgress } from '../types';
-import { addDays, addMinutes, nowIso } from './date';
+import { nowIso } from './date';
 
-const LEVEL_INTERVAL_DAYS = [0, 1, 3, 7, 15, 30];
+/**
+ * FSRS-5 asosidagi scheduler. Legacy maydonlar (level, ease_factor, confidence)
+ * eski UI va eski saqlangan progress bilan moslik uchun parallel yuritiladi.
+ */
+const scheduler = fsrs(
+  generatorParameters({
+    request_retention: 0.9,
+    maximum_interval: 365,
+    enable_fuzz: true,
+  }),
+);
 
 export function createProgress(wordId: string): UserProgress {
   return {
@@ -20,10 +31,68 @@ export function createProgress(wordId: string): UserProgress {
   };
 }
 
-export function nextReviewForLevel(level: number) {
-  const normalized = Math.max(0, Math.min(5, level));
-  if (normalized === 0) return addMinutes(15);
-  return addDays(LEVEL_INTERVAL_DAYS[normalized]);
+/** Eski progress yozuvini FSRS kartasiga aylantiradi (bir martalik migratsiya). */
+function cardFromProgress(progress: UserProgress): Card {
+  if (typeof progress.fsrs_stability === 'number' && typeof progress.fsrs_difficulty === 'number') {
+    return {
+      due: new Date(progress.next_review || Date.now()),
+      stability: progress.fsrs_stability,
+      difficulty: progress.fsrs_difficulty,
+      elapsed_days: 0,
+      scheduled_days: progress.interval_days ?? 0,
+      reps: progress.fsrs_reps ?? progress.correct_count + progress.wrong_count,
+      lapses: progress.fsrs_lapses ?? progress.lapses ?? 0,
+      learning_steps: 0,
+      state: (progress.fsrs_state ?? State.Review) as State,
+      last_review: progress.fsrs_last_review ? new Date(progress.fsrs_last_review) : undefined,
+    };
+  }
+
+  const card = createEmptyCard(progress.last_seen ? new Date(progress.last_seen) : new Date());
+  const total = progress.correct_count + progress.wrong_count;
+  if (total === 0 && progress.status === 'new') return card;
+
+  // Eski level jadvalidan taxminiy stability: interval kunlari yaxshi boshlang'ich qiymat
+  const legacyInterval = progress.interval_days ?? [0, 1, 3, 7, 15, 30][Math.max(0, Math.min(5, progress.level))];
+  return {
+    ...card,
+    stability: Math.max(0.5, legacyInterval || 0.5),
+    difficulty: Math.max(1, Math.min(10, 11 - ((progress.ease_factor ?? 2.5) - 1.3) * (9 / 1.7))),
+    scheduled_days: legacyInterval,
+    reps: total,
+    lapses: progress.lapses ?? 0,
+    state: progress.level === 0 ? State.Learning : State.Review,
+    last_review: progress.last_seen ? new Date(progress.last_seen) : undefined,
+  };
+}
+
+function gradeFor(result: ReviewResult | AnswerQuality, responseMs: number, reps: number): Grade {
+  if (result === 'unknown' || result === 'wrong') return Rating.Again;
+  if (result === 'hard' || result === 'close') return Rating.Hard;
+  // Tez va ishonchli javob — Easy, oddiy to'g'ri javob — Good
+  if (responseMs > 0 && responseMs < 3000 && reps >= 2) return Rating.Easy;
+  return Rating.Good;
+}
+
+function levelFromCard(card: Card): number {
+  if (card.state === State.New) return 0;
+  if (card.state === State.Learning || card.state === State.Relearning) return 0;
+  const days = card.scheduled_days;
+  if (days < 1) return 0;
+  if (days < 3) return 1;
+  if (days < 7) return 2;
+  if (days < 15) return 3;
+  if (days < 30) return 4;
+  return 5;
+}
+
+function statusFromCard(card: Card, wrongCount: number, wasWrong: boolean): UserProgress['status'] {
+  if (wasWrong || card.state === State.Relearning) return 'difficult';
+  if (card.state === State.New) return 'new';
+  if (card.state === State.Learning) return 'learning';
+  if (card.scheduled_days >= 30) return 'mastered';
+  if (card.scheduled_days >= 7) return 'known';
+  return wrongCount >= 3 ? 'difficult' : 'learning';
 }
 
 export function applyReview(
@@ -33,59 +102,40 @@ export function applyReview(
   responseMs = 0,
 ): UserProgress {
   const base = current ?? createProgress(wordId);
-  const correct = result === 'known' || result === 'correct';
-  const hard = result === 'hard' || result === 'close';
-  const wrong = result === 'unknown' || result === 'wrong';
+  const card = cardFromProgress(base);
+  const now = new Date();
+  const grade = gradeFor(result, responseMs, card.reps);
+  const { card: next } = scheduler.next(card, now, grade);
 
-  if (wrong) {
-    const nextAverage = averageResponse(base.average_response_ms ?? 0, responseMs, base.correct_count + base.wrong_count);
-    return {
-      ...base,
-      level: 0,
-      wrong_count: base.wrong_count + 1,
-      last_seen: nowIso(),
-      next_review: addMinutes(5),
-      status: 'difficult',
-      ease_factor: Math.max(1.3, (base.ease_factor ?? 2.5) - 0.25),
-      interval_days: 0,
-      lapses: (base.lapses ?? 0) + 1,
-      average_response_ms: nextAverage,
-      confidence: Math.max(0, (base.confidence ?? 20) - 18),
-    };
-  }
+  const wrong = grade === Rating.Again;
+  const correct = !wrong;
+  const totalAnswers = base.correct_count + base.wrong_count;
+  const nextAverage = averageResponse(base.average_response_ms ?? 0, responseMs, totalAnswers);
 
-  if (hard) {
-    const level = Math.max(0, Math.min(2, base.level));
-    const nextAverage = averageResponse(base.average_response_ms ?? 0, responseMs, base.correct_count + base.wrong_count);
-    return {
-      ...base,
-      level,
-      correct_count: base.correct_count + 1,
-      last_seen: nowIso(),
-      next_review: addMinutes(15),
-      status: 'learning',
-      ease_factor: Math.max(1.3, (base.ease_factor ?? 2.5) - 0.08),
-      interval_days: 0,
-      average_response_ms: nextAverage,
-      confidence: Math.max(0, Math.min(100, (base.confidence ?? 35) + (responseMs && responseMs < 5000 ? 4 : 1))),
-    };
-  }
+  // Retrievability o'rniga soddalashtirilgan ishonch ko'rsatkichi (0-100)
+  const confidenceDelta = wrong ? -18 : result === 'hard' || result === 'close' ? 2 : grade === Rating.Easy ? 10 : 6;
+  const confidence = Math.max(0, Math.min(100, (base.confidence ?? 20) + confidenceDelta));
 
-  const level = Math.min(5, base.level + 1);
-  const interval_days = LEVEL_INTERVAL_DAYS[level];
-  const nextAverage = averageResponse(base.average_response_ms ?? 0, responseMs, base.correct_count + base.wrong_count);
-  const speedBonus = responseMs && responseMs < 3500 ? 8 : responseMs && responseMs > 12000 ? 1 : 5;
   return {
     ...base,
-    level,
+    word_id: wordId,
+    level: levelFromCard(next),
     correct_count: base.correct_count + (correct ? 1 : 0),
-    last_seen: nowIso(),
-    next_review: nextReviewForLevel(level),
-    status: level >= 5 ? 'mastered' : level >= 3 ? 'known' : 'learning',
-    ease_factor: Math.min(3, (base.ease_factor ?? 2.5) + 0.05),
-    interval_days,
+    wrong_count: base.wrong_count + (wrong ? 1 : 0),
+    last_seen: now.toISOString(),
+    next_review: next.due.toISOString(),
+    status: statusFromCard(next, base.wrong_count + (wrong ? 1 : 0), wrong),
+    ease_factor: base.ease_factor,
+    interval_days: next.scheduled_days,
+    lapses: next.lapses,
     average_response_ms: nextAverage,
-    confidence: Math.max(0, Math.min(100, (base.confidence ?? 35) + speedBonus + level)),
+    confidence,
+    fsrs_stability: next.stability,
+    fsrs_difficulty: next.difficulty,
+    fsrs_reps: next.reps,
+    fsrs_lapses: next.lapses,
+    fsrs_state: next.state,
+    fsrs_last_review: next.last_review ? new Date(next.last_review).toISOString() : now.toISOString(),
   };
 }
 
