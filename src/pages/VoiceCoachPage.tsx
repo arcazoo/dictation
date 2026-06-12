@@ -127,7 +127,12 @@ export function VoiceCoachPage() {
     if (!activeRef.current) return;
     setCallState('aiSpeaking');
     setAiLine(text);
-    await speakText(text, { lang: MODE_META[modeRef.current].lang, rate: settings.sound.speed === 'slow' ? 0.8 : 0.95 });
+    // Android'da uzun matn TTS'da uzilib qoladi — gaplarga bo'lib o'qiymiz
+    const sentences = text.match(/[^.!?]+[.!?]*/g) ?? [text];
+    for (const sentence of sentences) {
+      if (!activeRef.current) return;
+      await speakText(sentence.trim(), { lang: MODE_META[modeRef.current].lang, rate: settings.sound.speed === 'slow' ? 0.8 : 0.95 });
+    }
   }
 
   function listen() {
@@ -150,11 +155,11 @@ export function VoiceCoachPage() {
       },
       onError: (error) => {
         if (!activeRef.current) return;
+        // Suhbat hech qachon avtomatik tugamaydi — faqat foydalanuvchi tugatadi
         if (error === 'not-allowed' || error === 'service-not-allowed') {
-          setErrorText("Mikrofonga ruxsat berilmadi. Brauzer sozlamalaridan mikrofonni yoqing.");
-          void endCall(false);
+          setErrorText('Mikrofon ruxsati kerak. Pastdagi mikrofon tugmasini bosib qayta urinib ko‘ring.');
         }
-        // 'no-speech' va boshqalar — onEnd qayta ishga tushiradi
+        // 'no-speech', 'network', 'aborted' — onEnd qayta ishga tushiradi
       },
       onEnd: () => {
         if (!activeRef.current || mutedRef.current || gotFinalRef.current) return;
@@ -300,6 +305,18 @@ export function VoiceCoachPage() {
     }
   }
 
+  /** Markaziy mikrofon tugmasi — qo'lda tinglashni qayta boshlash (user gesture) */
+  function manualListen() {
+    if (!activeRef.current) return;
+    stopSpeaking();
+    recognizerRef.current?.abort();
+    mutedRef.current = false;
+    setMuted(false);
+    silenceRetriesRef.current = 0;
+    setErrorText('');
+    listen();
+  }
+
   const inCall = callState !== 'idle' && callState !== 'ended';
 
   // ========================= QO'NG'IROQ EKRANI =========================
@@ -362,30 +379,49 @@ export function VoiceCoachPage() {
             {errorText ? <p className="text-sm font-black text-danger-600">{errorText}</p> : null}
           </div>
 
-          {/* Boshqaruv */}
-          <div className="mt-6 flex items-center gap-4">
-            <CallButton
-              icon="volume"
-              label={muted ? 'Yoqish' : 'Pauza'}
-              tone={muted ? 'border-warn-600 bg-warn-500' : 'border-ink-900/20 bg-white !text-ink-700 dark:border-white/20 dark:bg-ink-800 dark:!text-white'}
-              onClick={toggleMute}
-            />
+          {/* Boshqaruv: markazda MIKROFON, tugatish alohida pastda */}
+          <div className="mt-6 w-full space-y-3">
+            <div className="flex items-center justify-center gap-5">
+              <CallButton
+                icon="volume"
+                label={muted ? 'Yoqish' : 'Pauza'}
+                tone={muted ? 'border-warn-600 bg-warn-500' : 'border-ink-900/20 bg-white !text-ink-700 dark:border-white/20 dark:bg-ink-800 dark:!text-white'}
+                onClick={toggleMute}
+              />
+              <div className="flex flex-col items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={manualListen}
+                  aria-label="Gapirish"
+                  className={`grid h-20 w-20 place-items-center rounded-full border-b-8 text-white transition active:translate-y-[3px] active:border-b-4 ${
+                    callState === 'listening'
+                      ? 'border-success-800 bg-success-600'
+                      : 'border-brand-800 bg-brand-600'
+                  }`}
+                >
+                  <Icon name="mic" size={34} />
+                </button>
+                <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                  {callState === 'listening' ? 'Eshityapman' : 'Bosib gapiring'}
+                </span>
+              </div>
+              <CallButton
+                icon="play"
+                label="Qayta eshit"
+                tone="border-ink-900/20 bg-white !text-ink-700 dark:border-white/20 dark:bg-ink-800 dark:!text-white"
+                onClick={() => {
+                  if (aiLine) void speakText(aiLine, { lang: MODE_META[mode].lang });
+                }}
+              />
+            </div>
             <button
               type="button"
               onClick={() => void endCall(true)}
-              aria-label="Suhbatni tugatish"
-              className="grid h-20 w-20 place-items-center rounded-full border-b-8 border-danger-800 bg-danger-600 text-white transition active:translate-y-[3px] active:border-b-4"
+              className="mx-auto flex min-h-12 w-full max-w-xs items-center justify-center gap-2 rounded-2xl border-b-4 border-danger-800 bg-danger-600 px-5 text-sm font-black uppercase tracking-wide text-white transition active:translate-y-[2px] active:border-b-2"
             >
-              <Icon name="x" size={32} />
+              <Icon name="phoneDown" size={20} />
+              Suhbatni tugatish
             </button>
-            <CallButton
-              icon="play"
-              label="Qayta eshit"
-              tone="border-ink-900/20 bg-white !text-ink-700 dark:border-white/20 dark:bg-ink-800 dark:!text-white"
-              onClick={() => {
-                if (aiLine) void speakText(aiLine, { lang: MODE_META[mode].lang });
-              }}
-            />
           </div>
         </div>
       </Screen>
