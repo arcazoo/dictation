@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import type { View } from '../Layout';
 import { BottomNav, type NavItem } from './BottomNav';
+import { Icon } from './icons';
 import { TopBar } from './TopBar';
 
 export function AppShell({
@@ -18,34 +19,44 @@ export function AppShell({
   const active = [...navItems, ...desktopItems].find((item) => item.id === view);
 
   return (
-    <div className="min-h-screen text-slate-950 dark:text-slate-50">
+    <div className="min-h-screen text-ink-900 dark:text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-[1500px]">
-        <aside className="sticky top-0 hidden h-screen w-80 shrink-0 p-4 lg:block">
-          <div className="flex h-full flex-col rounded-[2rem] border border-white/70 bg-white/78 p-4 shadow-soft backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/72">
-            <div className="rounded-3xl bg-gradient-to-br from-brand-500 to-sky-500 p-5 text-white shadow-glow">
-              <p className="text-2xl font-black">Ruscha Tez</p>
-              <p className="mt-1 text-sm font-bold opacity-85">Adaptive learning coach</p>
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 p-4 lg:block">
+          <div className="flex h-full flex-col rounded-2xl border-2 border-ink-900/[0.07] bg-white p-4 shadow-hard dark:border-white/[0.07] dark:bg-ink-800 dark:shadow-hard-dark">
+            <div className="flex items-center gap-3 rounded-2xl border-b-4 border-brand-800 bg-brand-600 p-4 text-white">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/15 text-xl font-black">Р</span>
+              <div>
+                <p className="text-lg font-black leading-tight">Ruscha Tez</p>
+                <p className="text-[11px] font-black uppercase tracking-widest opacity-80">Rus tili kursi</p>
+              </div>
             </div>
-            <nav className="mt-5 space-y-2">
-              {desktopItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setView(item.id)}
-                  className={`flex min-h-12 w-full items-center gap-3 rounded-2xl px-4 text-left text-sm font-black transition ${
-                    view === item.id
-                      ? 'bg-slate-950 text-white shadow-soft dark:bg-white dark:text-slate-950'
-                      : 'text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-900'
-                  }`}
-                >
-                  <span className="grid h-8 w-8 place-items-center rounded-xl bg-slate-100 text-xs dark:bg-slate-800">{item.icon}</span>
-                  {item.label}
-                </button>
-              ))}
+            <nav className="mt-4 space-y-1.5 overflow-y-auto">
+              {desktopItems.map((item) => {
+                const isActive = view === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setView(item.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-black transition ${
+                      isActive
+                        ? 'bg-brand-600 text-white'
+                        : 'text-slate-500 hover:bg-ink-50 hover:text-ink-900 dark:text-slate-400 dark:hover:bg-ink-700 dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon name={item.icon} size={20} />
+                    {item.label}
+                  </button>
+                );
+              })}
             </nav>
-            <div className="mt-auto rounded-3xl bg-slate-950 p-4 text-white dark:bg-white dark:text-slate-950">
-              <p className="text-sm font-black">AI speaking</p>
-              <p className="mt-1 text-xs opacity-70">Har kuni 3 daqiqa ovozli mashq qiling.</p>
+            <div className="mt-auto rounded-2xl border-2 border-ink-900/[0.07] bg-ink-50 p-4 dark:border-white/[0.07] dark:bg-ink-900">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <Icon name="sparkles" size={16} className="text-brand-500" />
+                AI speaking
+              </p>
+              <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">Har kuni 3 daqiqa ovozli mashq qiling.</p>
             </div>
           </div>
         </aside>

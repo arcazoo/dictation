@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { PrimaryActionButton, SecondaryActionButton } from '../components/ui/ActionButtons';
 import { GlassCard } from '../components/ui/GlassCard';
-import { GradientCard } from '../components/ui/GradientCard';
+import { Icon } from '../components/ui/icons';
+import { PillTabs } from '../components/ui/PillTabs';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Screen } from '../components/ui/Screen';
 import { CATEGORIES } from '../data/categories';
@@ -32,52 +33,61 @@ export function TestPage({
   }, [progress, settings, source, words]);
 
   return (
-    <Screen className="max-w-5xl">
-      <GradientCard variant="amber">
-        <p className="text-sm font-black uppercase opacity-80">Quiz arena</p>
-        <h1 className="mt-2 text-3xl font-black sm:text-5xl">Test va written recall</h1>
-        <p className="mt-2 text-sm font-bold opacity-85">{source.title} / RU-UZ, UZ-RU yoki yozma javob.</p>
-      </GradientCard>
-
-      <GlassCard>
-        <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
-          <SelectBox
-            label="List"
-            value={source.kind === 'category' ? source.category : source.kind}
-            onChange={(value) => {
+    <Screen className="max-w-xl">
+      <GlassCard className="!p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-black">Test</h1>
+            <p className="truncate text-xs font-bold text-slate-500 dark:text-slate-400">{source.title}</p>
+          </div>
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950 dark:text-brand-300">
+            <Icon name="clipboard" size={22} />
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <select
+            value={sourceKey(source)}
+            onChange={(event) => {
+              const value = event.target.value;
               if (value === 'today') setSource({ kind: 'today', title: 'Bugungi test' });
               else if (value === 'mistakes') setSource({ kind: 'mistakes', title: "Xato so'zlar testi" });
-              else setSource({ kind: 'category', title: CATEGORIES.find((item) => item.id === value)?.title ?? value, category: value as Category });
+              else if (value.includes(':')) {
+                const [category, page] = value.split(':') as [Category, string];
+                const meta = CATEGORIES.find((item) => item.id === category);
+                setSource({ kind: 'page', title: `${meta?.title ?? category} / ${page}-varaq testi`, category, page: Number(page) });
+              } else {
+                setSource({
+                  kind: 'category',
+                  title: CATEGORIES.find((item) => item.id === value)?.title ?? value,
+                  category: value as Category,
+                });
+              }
             }}
-            options={[
-              { value: 'today', label: 'Bugungi dars' },
-              { value: 'mistakes', label: "Xato so'zlar" },
-              ...CATEGORIES.map((category) => ({ value: category.id, label: category.title })),
+            className="min-h-12 w-full rounded-xl border-2 border-ink-900/10 bg-white px-3 text-sm font-black outline-none focus:border-brand-500 dark:border-white/10 dark:bg-ink-900"
+          >
+            <option value="today">Bugungi dars</option>
+            <option value="mistakes">Xato so'zlar</option>
+            {CATEGORIES.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.title}
+              </option>
+            ))}
+            {CATEGORIES.flatMap((category) =>
+              [...new Set(words.filter((word) => word.category === category.id).map((word) => word.page))].map((page) => (
+                <option key={`${category.id}:${page}`} value={`${category.id}:${page}`}>
+                  {category.title} / {page}-varaq
+                </option>
+              )),
+            )}
+          </select>
+          <PillTabs
+            value={mode}
+            onChange={setMode}
+            items={[
+              { id: 'choice', label: '4 variant' },
+              { id: 'written', label: 'Yozma' },
             ]}
           />
-          <SelectBox
-            label="Varaq"
-            value={source.kind === 'page' ? `${source.category}:${source.page}` : 'all'}
-            onChange={(value) => {
-              if (value === 'all') return;
-              const [category, page] = value.split(':') as [Category, string];
-              const meta = CATEGORIES.find((item) => item.id === category);
-              setSource({ kind: 'page', title: `${meta?.title ?? category} / ${page}-varaq testi`, category, page: Number(page) });
-            }}
-            options={[
-              { value: 'all', label: 'Hammasi' },
-              ...CATEGORIES.flatMap((category) =>
-                [...new Set(words.filter((word) => word.category === category.id).map((word) => word.page))].map((page) => ({
-                  value: `${category.id}:${page}`,
-                  label: `${category.title} / ${page}-varaq`,
-                })),
-              ),
-            ]}
-          />
-          <div className="grid grid-cols-2 gap-2 lg:self-end">
-            <PrimaryActionButton className={mode === 'choice' ? '' : 'bg-white text-slate-900 shadow-soft'} onClick={() => setMode('choice')}>4 variant</PrimaryActionButton>
-            <PrimaryActionButton className={mode === 'written' ? '' : 'bg-white text-slate-900 shadow-soft'} onClick={() => setMode('written')}>Yozma</PrimaryActionButton>
-          </div>
         </div>
       </GlassCard>
 
@@ -90,19 +100,11 @@ export function TestPage({
   );
 }
 
-function SelectBox({ label, value, options, onChange }: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) {
-  return (
-    <label className="text-sm font-black">
-      {label}
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 outline-none focus:border-brand-500 dark:border-slate-800 dark:bg-slate-950"
-      >
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-    </label>
-  );
+function sourceKey(source: StudySource) {
+  if (source.kind === 'category') return source.category;
+  if (source.kind === 'page') return `${source.category}:${source.page}`;
+  if (source.kind === 'mistakes') return 'mistakes';
+  return 'today';
 }
 
 function ChoiceTest({
@@ -140,41 +142,57 @@ function ChoiceTest({
   if (!word) return <GlassCard>Test uchun so'z topilmadi.</GlassCard>;
 
   return (
-    <GlassCard>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-black text-brand-600">{word.category_ru}</p>
-          <h2 className="mt-2 text-3xl font-black">{reverse ? `${word.uzbek} rus tilida qanday?` : `${word.russian} nimani anglatadi?`}</h2>
-        </div>
-        <span className="rounded-2xl bg-slate-950 px-3 py-2 text-sm font-black text-white dark:bg-white dark:text-slate-950">{correct}/{index + (selected ? 1 : 0)}</span>
+    <>
+      <div className="flex items-center gap-3">
+        <ProgressBar value={percent} className="flex-1" />
+        <span className="text-xs font-black text-slate-400">
+          {correct} ✓
+        </span>
       </div>
-      <ProgressBar value={percent} className="mt-4" tone="amber" />
-      <div className="mt-6 grid gap-3">
-        {choices.map((choice, choiceIndex) => {
-          const isAnswer = choice === answer;
-          const isPicked = choice === selected;
-          const tone = !selected
-            ? 'border-white bg-white/90 text-slate-900 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-50'
-            : isAnswer
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-100'
-              : isPicked
-                ? 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-950 dark:text-rose-100'
-                : 'border-white bg-white/60 opacity-65 dark:border-slate-800 dark:bg-slate-900';
-          return (
-            <button key={choice} type="button" onClick={() => pick(choice)} className={`min-h-16 rounded-3xl border p-4 text-left font-black shadow-soft transition active:scale-[0.98] ${tone}`}>
-              <span className="mr-3 rounded-xl bg-slate-100 px-3 py-2 text-xs dark:bg-slate-800">{String.fromCharCode(65 + choiceIndex)}</span>
-              {choice}
-            </button>
-          );
-        })}
-      </div>
-      {selected ? (
-        <div className="mt-5 flex items-center justify-between gap-3 rounded-3xl bg-slate-50 p-4 dark:bg-slate-950">
-          <p className="font-black">{selected === answer ? "To'g'ri" : `Noto'g'ri / ${answer}`}</p>
-          <PrimaryActionButton onClick={next}>Keyingisi</PrimaryActionButton>
+
+      <GlassCard key={word.id} className="animate-slide-up">
+        <p className="text-[11px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400">{word.category_ru}</p>
+        <h2 className="mt-2 text-3xl font-black leading-snug">
+          {reverse ? `«${word.uzbek}» rus tilida qanday?` : `«${word.russian}» nimani anglatadi?`}
+        </h2>
+        <div className="mt-5 grid gap-2">
+          {choices.map((choice) => {
+            const isAnswer = choice === answer;
+            const isPicked = choice === selected;
+            const tone = !selected
+              ? 'border-ink-900/12 bg-white hover:border-brand-500/40 dark:border-white/12 dark:bg-ink-900'
+              : isAnswer
+                ? 'border-success-600 bg-success-100 text-success-800 dark:bg-success-700/20 dark:text-success-500'
+                : isPicked
+                  ? 'border-danger-600 bg-danger-100 text-danger-800 dark:bg-danger-700/20 dark:text-danger-500'
+                  : 'border-ink-900/10 bg-white opacity-50 dark:border-white/10 dark:bg-ink-900';
+            return (
+              <button
+                key={choice}
+                type="button"
+                onClick={() => pick(choice)}
+                disabled={Boolean(selected)}
+                className={`min-h-14 rounded-2xl border-2 border-b-4 px-4 py-3 text-left text-base font-black transition active:translate-y-[2px] active:border-b-2 disabled:active:translate-y-0 ${tone}`}
+              >
+                {choice}
+              </button>
+            );
+          })}
         </div>
-      ) : null}
-    </GlassCard>
+        {selected ? (
+          <div
+            className={`mt-4 flex items-center justify-between gap-3 rounded-2xl p-4 ${
+              selected === answer ? 'bg-success-100 dark:bg-success-700/20' : 'bg-danger-100 dark:bg-danger-700/20'
+            }`}
+          >
+            <p className="font-black">
+              {selected === answer ? "To'g'ri! ✓" : `To'g'ri javob: ${answer}`}
+            </p>
+            <PrimaryActionButton onClick={next}>Keyingisi</PrimaryActionButton>
+          </div>
+        ) : null}
+      </GlassCard>
+    </>
   );
 }
 
@@ -191,7 +209,7 @@ function WrittenTest({
   const word = queue[index % Math.max(queue.length, 1)];
 
   async function check() {
-    if (!word || !input.trim()) return;
+    if (!word || !input.trim() || result) return;
     const quality = gradeWrittenAnswer(input, word.uzbek);
     setResult(quality);
     await reviewWord(word, quality, 'written');
@@ -206,23 +224,37 @@ function WrittenTest({
   if (!word) return <GlassCard>Yozma test uchun so'z topilmadi.</GlassCard>;
 
   return (
-    <GlassCard className="mx-auto max-w-3xl">
-      <p className="text-sm font-black text-brand-600">Tarjima qiling</p>
-      <h2 className="mt-4 text-5xl font-black">{word.russian}</h2>
-      <textarea
+    <GlassCard key={word.id} className="animate-slide-up">
+      <p className="text-[11px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400">Tarjima qiling</p>
+      <h2 className="mt-3 text-4xl font-black">{word.russian}</h2>
+      <input
         value={input}
         onChange={(event) => setInput(event.target.value)}
-        placeholder="Tarjimani yozing"
-        className="mt-6 min-h-28 w-full resize-none rounded-3xl border border-slate-200 bg-white/80 px-5 py-4 text-lg font-bold outline-none focus:border-brand-500 dark:border-slate-800 dark:bg-slate-950"
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') void check();
+        }}
+        disabled={result !== null}
+        placeholder="Tarjimani yozing..."
+        className="mt-5 w-full rounded-2xl border-2 border-ink-900/12 bg-white px-4 py-3.5 text-lg font-bold outline-none transition focus:border-brand-500 dark:border-white/12 dark:bg-ink-900"
       />
       {result ? (
-        <div className="mt-4 rounded-3xl bg-slate-50 p-4 dark:bg-slate-950">
+        <div
+          className={`mt-4 rounded-2xl p-4 ${
+            result === 'correct'
+              ? 'bg-success-100 dark:bg-success-700/20'
+              : result === 'close'
+                ? 'bg-warn-100 dark:bg-amber-950/40'
+                : 'bg-danger-100 dark:bg-danger-700/20'
+          }`}
+        >
           <p className="font-black">{answerLabel(result)}</p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">To'g'ri javob: {word.uzbek}</p>
+          <p className="mt-1 text-sm font-bold text-slate-600 dark:text-slate-300">To'g'ri javob: {word.uzbek}</p>
         </div>
       ) : null}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <PrimaryActionButton onClick={check} disabled={!!result}>Tekshirish</PrimaryActionButton>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <PrimaryActionButton onClick={() => void check()} disabled={!!result || !input.trim()}>
+          Tekshirish
+        </PrimaryActionButton>
         <SecondaryActionButton onClick={next}>Keyingisi</SecondaryActionButton>
       </div>
     </GlassCard>

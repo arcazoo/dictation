@@ -17,20 +17,20 @@ export type View =
   | 'settings';
 
 const navItems: NavItem[] = [
-  { id: 'today', label: 'Bugun', short: 'Bugun', icon: 'B' },
-  { id: 'path', label: "Yo'l", short: "Yo'l", icon: 'Y' },
-  { id: 'grammar', label: 'Grammatika', short: 'Gram', icon: 'G' },
-  { id: 'ai', label: 'AI Coach', short: 'AI', icon: 'AI' },
-  { id: 'settings', label: 'Profil', short: 'Profil', icon: 'P' },
+  { id: 'today', label: 'Bugun', short: 'Bugun', icon: 'home' },
+  { id: 'path', label: "Yo'l", short: "Yo'l", icon: 'map' },
+  { id: 'grammar', label: 'Grammatika', short: 'Gram', icon: 'book' },
+  { id: 'ai', label: 'AI Coach', short: 'AI', icon: 'sparkles' },
+  { id: 'settings', label: 'Profil', short: 'Profil', icon: 'user' },
 ];
 
 const desktopItems: NavItem[] = [
   ...navItems,
-  { id: 'sections', label: 'Mashq', short: 'Mashq', icon: 'M' },
-  { id: 'study', label: 'Flashcard', short: 'Cards', icon: 'F' },
-  { id: 'test', label: 'Test', short: 'Test', icon: 'T' },
-  { id: 'errors', label: 'Mistake Repair', short: 'Xato', icon: 'X' },
-  { id: 'stats', label: 'Analytics', short: 'Stats', icon: 'S' },
+  { id: 'sections', label: 'Mashq markazi', short: 'Mashq', icon: 'layers' },
+  { id: 'study', label: 'Flashcard', short: 'Cards', icon: 'cards' },
+  { id: 'test', label: 'Test', short: 'Test', icon: 'clipboard' },
+  { id: 'errors', label: 'Xatolar ustaxonasi', short: 'Xato', icon: 'wrench' },
+  { id: 'stats', label: 'Statistika', short: 'Stats', icon: 'chart' },
 ];
 
 export function Layout({

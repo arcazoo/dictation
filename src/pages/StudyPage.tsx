@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AudioButton } from '../components/ai/AudioButton';
-import { PrimaryActionButton, SecondaryActionButton } from '../components/ui/ActionButtons';
-import { GlassCard } from '../components/ui/GlassCard';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Icon } from '../components/ui/icons';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Screen } from '../components/ui/Screen';
-import { EmptyState } from '../components/ui/EmptyState';
 import { getWordsForSource } from '../lib/source';
 import type { ReviewResult, Settings, StudySource, UserProgress, Word } from '../types';
 
@@ -42,56 +41,94 @@ export function StudyPage({
   if (!word) {
     return (
       <Screen>
-        <EmptyState title={source.title} text="Bu ro'yxat yakunlandi. Boshqa list tanlang yoki keyingi review vaqtini kuting." />
+        <EmptyState title={source.title} text="Bu ro'yxat yakunlandi. Boshqa list tanlang yoki keyingi takror vaqtini kuting." />
       </Screen>
     );
   }
 
   return (
-    <Screen className="max-w-4xl">
-      <GlassCard>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-black text-brand-600">{source.title}</p>
-            <h1 className="mt-1 text-2xl font-black">Flashcard practice</h1>
-          </div>
-          <span className="rounded-2xl bg-slate-950 px-3 py-2 text-sm font-black text-white dark:bg-white dark:text-slate-950">{index + 1}/{lesson.length}</span>
+    <Screen className="max-w-xl">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950 dark:text-brand-300">
+          <Icon name="cards" size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-black">{source.title}</p>
+          <ProgressBar value={percent} className="mt-1.5" />
         </div>
-        <ProgressBar value={percent} className="mt-4" />
-      </GlassCard>
+        <span className="shrink-0 text-xs font-black text-slate-400">
+          {index + 1}/{lesson.length}
+        </span>
+      </div>
 
+      {/* Karta */}
       <button
         type="button"
         onClick={() => setRevealed((value) => !value)}
-        className="group min-h-[24rem] rounded-[2rem] bg-gradient-to-br from-white to-brand-50 p-4 text-center shadow-soft ring-1 ring-white transition hover:-translate-y-1 dark:from-slate-900 dark:to-slate-800 dark:ring-slate-800"
+        className={`relative min-h-[22rem] w-full rounded-2xl border-2 border-b-8 p-5 text-center transition-all active:translate-y-[3px] active:border-b-4 ${
+          revealed
+            ? 'border-brand-600/35 bg-brand-50 dark:border-brand-500/35 dark:bg-brand-950/40'
+            : 'border-ink-900/10 bg-white dark:border-white/10 dark:bg-ink-800'
+        }`}
       >
         <div className="flex items-center justify-between">
-          <span className="rounded-2xl bg-brand-100 px-3 py-2 text-xs font-black text-brand-700 dark:bg-brand-950 dark:text-brand-100">{word.category_ru} / {word.page}-varaq</span>
+          <span className="rounded-xl bg-ink-50 px-3 py-1.5 text-[11px] font-black text-slate-500 dark:bg-ink-900 dark:text-slate-400">
+            {word.category_ru} · {word.page}-varaq
+          </span>
           <AudioButton text={word.russian} />
         </div>
-        <div className="grid min-h-72 place-items-center">
+        <div className="grid min-h-64 place-items-center">
           <div>
-            <p className="text-sm font-black uppercase text-slate-400">{revealed ? 'Tarjima' : 'Ruscha so\'z'}</p>
-            <h2 className="mt-4 text-5xl font-black tracking-tight sm:text-7xl">{revealed ? word.uzbek : word.russian}</h2>
-            <p className="mt-5 text-sm font-bold text-slate-500">{revealed ? word.russian : "Eslang, keyin tarjimani oching"}</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              {revealed ? 'Tarjima' : "Ruscha so'z"}
+            </p>
+            <h2 className="mt-4 text-5xl font-black tracking-tight sm:text-6xl">{revealed ? word.uzbek : word.russian}</h2>
+            <p className="mt-4 text-sm font-bold text-slate-400">
+              {revealed ? word.russian : 'Eslang — keyin kartani bosing'}
+            </p>
           </div>
         </div>
       </button>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {revealed ? (
-          <>
-            <PrimaryActionButton onClick={() => answer('known')}>Bilaman</PrimaryActionButton>
-            <SecondaryActionButton onClick={() => answer('hard')}>Qiyin</SecondaryActionButton>
-            <button className="min-h-14 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-black text-white shadow-soft" onClick={() => answer('unknown')}>Bilmayman</button>
-          </>
-        ) : (
-          <>
-            <PrimaryActionButton className="sm:col-span-2" onClick={() => setRevealed(true)}>Tarjimasini ko'rish</PrimaryActionButton>
-            <SecondaryActionButton onClick={() => setIndex((value) => Math.min(value + 1, lesson.length))}>O'tkazish</SecondaryActionButton>
-          </>
-        )}
-      </div>
+      {/* Javob tugmalari */}
+      {revealed ? (
+        <div className="grid grid-cols-3 gap-2">
+          <AnswerButton tone="border-danger-800 bg-danger-600" onClick={() => answer('unknown')}>
+            Bilmayman
+          </AnswerButton>
+          <AnswerButton tone="border-warn-600 bg-warn-500" onClick={() => answer('hard')}>
+            Qiyin
+          </AnswerButton>
+          <AnswerButton tone="border-success-800 bg-success-600" onClick={() => answer('known')}>
+            Bilaman
+          </AnswerButton>
+        </div>
+      ) : (
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <AnswerButton tone="border-brand-800 bg-brand-600" onClick={() => setRevealed(true)}>
+            Tarjimani ko'rish
+          </AnswerButton>
+          <button
+            type="button"
+            onClick={() => setIndex((value) => Math.min(value + 1, lesson.length))}
+            className="min-h-14 rounded-2xl border-2 border-b-4 border-ink-900/15 bg-white px-5 text-sm font-black uppercase text-slate-500 transition active:translate-y-[2px] active:border-b-2 dark:border-white/15 dark:bg-ink-800 dark:text-slate-400"
+          >
+            O'tkazish
+          </button>
+        </div>
+      )}
     </Screen>
+  );
+}
+
+function AnswerButton({ tone, children, onClick }: { tone: string; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-14 rounded-2xl border-b-4 px-3 text-sm font-black uppercase tracking-wide text-white transition active:translate-y-[2px] active:border-b-2 ${tone}`}
+    >
+      {children}
+    </button>
   );
 }

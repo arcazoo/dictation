@@ -342,14 +342,14 @@ export function GrammarTopicPage({ setView }: { setView: (view: View) => void })
                   type="button"
                   disabled={showResult}
                   onClick={() => setPicked(choice)}
-                  className={`min-h-12 rounded-2xl px-4 py-3 text-left text-sm font-black ring-1 transition active:scale-[0.99] ${
+                  className={`min-h-12 rounded-2xl border-2 border-b-4 px-4 py-3 text-left text-sm font-black transition active:translate-y-[2px] active:border-b-2 disabled:active:translate-y-0 ${
                     showResult && isAnswer
-                      ? 'bg-success-100 text-success-700 ring-success-500 dark:bg-success-700/20 dark:text-success-500'
+                      ? 'border-success-600 bg-success-100 text-success-700 dark:bg-success-700/20 dark:text-success-500'
                       : showResult && isPicked
-                        ? 'bg-danger-100 text-danger-700 ring-danger-500 dark:bg-danger-700/20 dark:text-danger-500'
+                        ? 'border-danger-600 bg-danger-100 text-danger-700 dark:bg-danger-700/20 dark:text-danger-500'
                         : isPicked
-                          ? 'bg-violet-100 text-violet-700 ring-violet-500 dark:bg-violet-900/50 dark:text-violet-200'
-                          : 'bg-white text-slate-700 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700'
+                          ? 'border-violet-600 bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-200'
+                          : 'border-ink-900/12 bg-white text-slate-700 hover:border-violet-500/40 dark:border-white/12 dark:bg-ink-900 dark:text-slate-200'
                   }`}
                 >
                   {choice}
@@ -401,7 +401,7 @@ export function GrammarTopicPage({ setView }: { setView: (view: View) => void })
               if (event.key === 'Enter') check();
             }}
             placeholder="Javobingizni yozing..."
-            className="mt-5 w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 text-base font-bold outline-none transition focus:border-violet-500 dark:border-slate-700 dark:bg-slate-900"
+            className="mt-5 w-full rounded-2xl border-2 border-ink-900/12 bg-white px-4 py-3 text-base font-bold outline-none transition focus:border-violet-500 dark:border-white/12 dark:bg-ink-900"
             autoFocus
           />
         ) : null}

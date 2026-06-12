@@ -5,22 +5,25 @@ export function ProgressBar({
 }: {
   value: number;
   className?: string;
-  tone?: 'brand' | 'amber' | 'rose' | 'violet' | 'sky';
+  tone?: 'brand' | 'amber' | 'rose' | 'violet' | 'sky' | 'success';
 }) {
   const colors = {
-    brand: 'from-brand-500 to-sky-500',
-    amber: 'from-amber-400 to-orange-500',
-    rose: 'from-rose-400 to-red-500',
-    violet: 'from-violet-500 to-purple-500',
-    sky: 'from-sky-400 to-blue-500',
+    brand: 'bg-brand-500',
+    amber: 'bg-warn-500',
+    rose: 'bg-danger-500',
+    violet: 'bg-violet-500',
+    sky: 'bg-sky-500',
+    success: 'bg-success-500',
   };
 
   return (
-    <div className={`h-3 overflow-hidden rounded-full bg-slate-200/70 dark:bg-slate-800 ${className}`}>
+    <div className={`h-3.5 overflow-hidden rounded-full border border-ink-900/10 bg-ink-100 dark:border-white/10 dark:bg-ink-900 ${className}`}>
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${colors[tone]} transition-all duration-500`}
+        className={`relative h-full rounded-full ${colors[tone]} transition-all duration-500`}
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
-      />
+      >
+        <div className="absolute inset-x-2 top-0.5 h-1 rounded-full bg-white/35" />
+      </div>
     </div>
   );
 }

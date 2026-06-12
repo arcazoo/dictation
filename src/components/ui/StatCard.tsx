@@ -1,16 +1,27 @@
-export function StatCard({ label, value, hint, tone = 'brand' }: { label: string; value: string | number; hint?: string; tone?: 'brand' | 'amber' | 'rose' | 'violet' | 'sky' }) {
-  const tones = {
-    brand: 'from-brand-50 to-emerald-50 text-brand-700 dark:from-brand-950/60 dark:to-emerald-950/30 dark:text-brand-100',
-    amber: 'from-amber-50 to-orange-50 text-amber-700 dark:from-amber-950/60 dark:to-orange-950/30 dark:text-amber-100',
-    rose: 'from-rose-50 to-red-50 text-rose-700 dark:from-rose-950/60 dark:to-red-950/30 dark:text-rose-100',
-    violet: 'from-violet-50 to-purple-50 text-violet-700 dark:from-violet-950/60 dark:to-purple-950/30 dark:text-violet-100',
-    sky: 'from-sky-50 to-blue-50 text-sky-700 dark:from-sky-950/60 dark:to-blue-950/30 dark:text-sky-100',
-  };
+const tones = {
+  brand: 'text-brand-600 dark:text-brand-400',
+  amber: 'text-warn-600 dark:text-warn-500',
+  rose: 'text-danger-600 dark:text-danger-500',
+  violet: 'text-violet-600 dark:text-violet-400',
+  sky: 'text-sky-600 dark:text-sky-400',
+};
+
+export function StatCard({
+  label,
+  value,
+  hint,
+  tone = 'brand',
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  tone?: keyof typeof tones;
+}) {
   return (
-    <div className={`rounded-3xl bg-gradient-to-br p-4 shadow-soft ${tones[tone]}`}>
-      <p className="text-xs font-bold opacity-75">{label}</p>
-      <p className="mt-2 text-2xl font-black">{value}</p>
-      {hint ? <p className="mt-1 text-xs opacity-70">{hint}</p> : null}
+    <div className="rounded-2xl border-2 border-ink-900/[0.07] bg-white p-4 shadow-hard dark:border-white/[0.07] dark:bg-ink-800 dark:shadow-hard-dark">
+      <p className={`text-[11px] font-black uppercase tracking-widest ${tones[tone]}`}>{label}</p>
+      <p className="mt-2 text-2xl font-black text-ink-900 dark:text-white">{value}</p>
+      {hint ? <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">{hint}</p> : null}
     </div>
   );
 }

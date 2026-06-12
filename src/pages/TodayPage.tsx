@@ -4,11 +4,11 @@ import { HeartBadge, LevelBadge, StreakBadge, XPBadge } from '../components/ui/B
 import { PrimaryActionButton, SecondaryActionButton } from '../components/ui/ActionButtons';
 import { GradientCard } from '../components/ui/GradientCard';
 import { GlassCard } from '../components/ui/GlassCard';
+import { Icon } from '../components/ui/icons';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ProgressRing } from '../components/ui/ProgressRing';
 import { Screen } from '../components/ui/Screen';
 import { SectionHeader } from '../components/ui/SectionHeader';
-import { StatCard } from '../components/ui/StatCard';
 import type { DailyActivity, LearningLesson, Settings, StudySource, UserProfile, UserProgress, Word } from '../types';
 
 export function TodayPage({
@@ -41,151 +41,180 @@ export function TodayPage({
   const lesson = getTodayLesson(words, progress, settings);
   const todayKey = new Date().toISOString().slice(0, 10);
   const done = lesson.filter((word) => progress[word.id]?.last_seen?.startsWith(todayKey)).length;
-  const percent = lesson.length ? Math.round((done / lesson.length) * 100) : 0;
   const mistakes = words.filter((word) => (progress[word.id]?.wrong_count ?? 0) > 0).length;
   const dailyXp = todayActivity?.xp ?? 0;
   const dailyPercent = Math.min(100, Math.round((dailyXp / Math.max(1, profile.daily_goal_xp)) * 100));
-  const preview = firstLesson ? [firstLesson] : [];
+
+  const startMain = () => (firstLesson ? startLesson(firstLesson) : startStudy({ kind: 'today', title: 'Bugungi dars' }));
 
   return (
     <Screen>
-      <GradientCard className="min-h-[210px]">
+      {/* Profil chizig'i */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <StreakBadge value={`${profile.streak} kun`} />
+        <XPBadge value={profile.total_xp} />
+        <LevelBadge value={profile.level} />
+        <HeartBadge value={profile.hearts_enabled ? `${profile.hearts}/5` : 'off'} />
+      </div>
+
+      {/* Hero */}
+      <GradientCard>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-xl">
-            <p className="text-sm font-black uppercase tracking-wide opacity-80">Bugungi dars</p>
-            <h1 className="mt-3 text-3xl font-black leading-tight sm:text-5xl">Bugun ruscha miyani uyg'otamizmi?</h1>
-            <p className="mt-3 text-sm font-bold opacity-90">
-              {due.length} ta review, {lesson.length} ta dars so'zi va AI speaking tayyor.
+          <div className="max-w-lg">
+            <p className="text-[11px] font-black uppercase tracking-widest opacity-80">Bugungi reja</p>
+            <h1 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">
+              {due.length ? `${due.length} ta takror kutyapti` : 'Yangi so‘zlar vaqti!'}
+            </h1>
+            <p className="mt-2 text-sm font-bold opacity-90">
+              {lesson.length} ta so‘z · {done} tasi bajarildi · maqsad {profile.daily_goal_xp} XP
             </p>
-            <div className="mt-5 grid grid-cols-2 gap-2 sm:flex">
-              <PrimaryActionButton
-                className="bg-white text-brand-700 shadow-soft"
-                onClick={() => (firstLesson ? startLesson(firstLesson) : startStudy({ kind: 'today', title: 'Bugungi dars' }))}
-              >
+            <div className="mt-5 flex flex-wrap gap-2">
+              <PrimaryActionButton className="border-white/40 bg-white !text-brand-700 hover:bg-brand-50" onClick={startMain}>
                 Darsni boshlash
               </PrimaryActionButton>
-              <SecondaryActionButton className="bg-white/18 text-white ring-white/30 hover:bg-white/25" onClick={() => setView('ai')}>
-                AI bilan 3 daqiqa
+              <SecondaryActionButton
+                className="border-white/25 bg-white/10 !text-white hover:bg-white/20 dark:border-white/25 dark:bg-white/10"
+                onClick={() => setView('ai')}
+              >
+                AI speaking
               </SecondaryActionButton>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:w-64">
-            <XPBadge value={profile.total_xp} />
-            <LevelBadge value={profile.level} />
-            <StreakBadge value={`${profile.streak} kun`} />
-            <HeartBadge value={profile.hearts_enabled ? `${profile.hearts}/5` : 'off'} />
+          <div className="mx-auto rounded-2xl bg-white/10 p-3 text-white">
+            <ProgressRing value={dailyPercent} label={`${dailyXp}/${profile.daily_goal_xp} XP`} size={120} />
           </div>
         </div>
       </GradientCard>
 
-      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <GlassCard>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-black text-brand-600">Daily Goal</p>
-              <h2 className="mt-2 text-2xl font-black">{dailyXp} / {profile.daily_goal_xp} XP</h2>
-              <p className="mt-1 text-sm text-slate-500">{done}/{lesson.length || 0} ta bugungi mashq bajarildi</p>
-            </div>
-            <div className="rounded-3xl bg-gradient-to-br from-brand-500 to-sky-500 p-2 text-white shadow-glow">
-              <ProgressRing value={dailyPercent} label="goal" />
-            </div>
-          </div>
-          <ProgressBar value={dailyPercent} className="mt-5" />
-        </GlassCard>
-
-        <GlassCard>
-          <p className="text-sm font-black text-sky-600">Main Lesson</p>
-          <h2 className="mt-2 text-2xl font-black">{firstLesson?.title ?? `${lesson.length} so'zli dars`}</h2>
-          <p className="mt-1 text-sm text-slate-500">{firstLesson?.subtitle ?? `${due.length} ta eski so'z takrorlashga tayyor`}</p>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <MiniMetric label="Yangi" value={Math.max(0, lesson.length - due.length)} />
-            <MiniMetric label="Review" value={due.length} />
-            <MiniMetric label="XP" value={firstLesson?.xp ?? 60} />
-          </div>
-        </GlassCard>
+      {/* Uch yo'nalish */}
+      <section className="grid gap-3 lg:grid-cols-3">
+        <ActionTile
+          icon="cards"
+          tone="text-brand-600 bg-brand-50 dark:bg-brand-950/60 dark:text-brand-300"
+          title="So'zlar darsi"
+          subtitle={firstLesson ? firstLesson.title : `${lesson.length} ta so'z tayyor`}
+          cta="Boshlash"
+          onClick={startMain}
+        />
+        <ActionTile
+          icon="book"
+          tone="text-violet-600 bg-violet-100/70 dark:bg-violet-950/60 dark:text-violet-300"
+          title="Grammatika"
+          subtitle="A1→B1 kurs: kelishiklar, fe'l, aspekt"
+          cta="Davom etish"
+          onClick={() => setView('grammar')}
+        />
+        <ActionTile
+          icon="wrench"
+          tone="text-danger-600 bg-danger-100/70 dark:bg-rose-950/60 dark:text-rose-300"
+          title="Xatolar ustaxonasi"
+          subtitle={mistakes ? `${mistakes} ta so'z tuzatish kutyapti` : 'Xatolar yo‘q — zo‘r!'}
+          cta="Tuzatish"
+          onClick={() => startStudy({ kind: 'mistakes', title: "Xato so'zlar" })}
+        />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <StatCard label="Aniqlik" value={`${accuracy}%`} hint="bugungi javoblar" tone="sky" />
-        <StatCard label="O'rganilgan" value={learned} hint="known/mastered" tone="brand" />
-        <StatCard label="Xato repair" value={mistakes} hint="tuzatish kerak" tone="rose" />
+      {/* Ko'rsatkichlar */}
+      <section className="grid grid-cols-3 gap-3">
+        <Metric value={`${accuracy}%`} label="aniqlik" />
+        <Metric value={learned} label="o'rganilgan" />
+        <Metric value={due.length} label="takror" />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_380px]">
-        <GlassCard>
-          <SectionHeader title="Learning Path preview" subtitle="Keyingi lessonlar bosqichma-bosqich ochiladi." action={<SecondaryActionButton onClick={() => setView('path')}>Yo'lni ochish</SecondaryActionButton>} />
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {(preview.length ? preview : [{ id: 'today', title: 'Bugungi dars', subtitle: 'Adaptive review', xp: 60, status: 'available' as const }]).map((lessonItem, index) => (
-              <button
-                key={lessonItem.id}
-                type="button"
-                onClick={() => firstLesson ? startLesson(firstLesson) : startStudy({ kind: 'today', title: 'Bugungi dars' })}
-                className="rounded-3xl bg-gradient-to-br from-white to-brand-50 p-4 text-left shadow-soft ring-1 ring-white transition hover:-translate-y-1 dark:from-slate-900 dark:to-slate-800 dark:ring-slate-800"
-              >
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-lg font-black text-white shadow-glow">{index + 1}</span>
-                <h3 className="mt-4 font-black">{lessonItem.title}</h3>
-                <p className="mt-1 text-sm text-slate-500">{lessonItem.subtitle}</p>
-                <p className="mt-3 text-xs font-black text-brand-600">{lessonItem.xp} XP reward</p>
-              </button>
-            ))}
-          </div>
-        </GlassCard>
-
-        <div className="space-y-4">
-          <GradientCard variant="violet">
-            <p className="text-sm font-bold opacity-85">AI Coach</p>
-            <h2 className="mt-2 text-2xl font-black">AI bilan 3 daqiqa speaking</h2>
-            <div className="mt-4 grid gap-2">
-              <SecondaryActionButton className="bg-white/18 text-white ring-white/25" onClick={() => setView('ai')}>Speaking ochish</SecondaryActionButton>
-              <SecondaryActionButton className="bg-white/18 text-white ring-white/25" onClick={() => setView('ai')}>Xatolarimni tushuntir</SecondaryActionButton>
-            </div>
-          </GradientCard>
-
-          <GlassCard>
-            <SectionHeader title="Mistake Repair" subtitle={`${mistakes} ta xato so'z bor`} />
-            <PrimaryActionButton className="mt-4 w-full" onClick={() => startStudy({ kind: 'mistakes', title: "Xato so'zlar" })}>
-              Xatolarni tuzatish
-            </PrimaryActionButton>
-          </GlassCard>
-
-          <GlassCard>
-            <SectionHeader title="Grammar Lab" subtitle="Qoidalar, misollar va drill mashqlar." />
-            <PrimaryActionButton className="mt-4 w-full" onClick={() => setView('grammar')}>
-              Grammatikani o'rganish
-            </PrimaryActionButton>
-          </GlassCard>
-        </div>
-      </section>
-
-      <section>
-        <SectionHeader title="Bo'limlar progressi" subtitle="Otlar, sifatlar va fe'llar bo'yicha umumiy holat." />
-        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+      {/* Bo'limlar progressi */}
+      <GlassCard>
+        <SectionHeader
+          title="Bo'limlar"
+          subtitle="Otlar, sifatlar va fe'llar bo'yicha holat"
+          action={
+            <SecondaryActionButton className="hidden sm:block" onClick={() => setView('sections')}>
+              Hammasi
+            </SecondaryActionButton>
+          }
+        />
+        <div className="mt-4 space-y-4">
           {CATEGORIES.map((category) => {
             const value = getCategoryProgress(words, progress, category.id);
             return (
-              <GlassCard key={category.id}>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-black text-brand-600">{category.title}</p>
-                    <h3 className="mt-1 text-xl font-black">{settings.dailyPlan[category.planKey]} varaq / kun</h3>
-                  </div>
-                  <span className="rounded-2xl bg-slate-950 px-3 py-2 text-sm font-black text-white dark:bg-white dark:text-slate-950">{value}%</span>
+              <div key={category.id}>
+                <div className="flex items-center justify-between text-sm font-black">
+                  <span>{category.title}</span>
+                  <span className="text-slate-400">{value}%</span>
                 </div>
-                <ProgressBar value={value} className="mt-4" />
-              </GlassCard>
+                <ProgressBar value={value} className="mt-2" />
+              </div>
             );
           })}
         </div>
-      </section>
+        <SecondaryActionButton className="mt-4 w-full sm:hidden" onClick={() => setView('sections')}>
+          Mashq markazini ochish
+        </SecondaryActionButton>
+      </GlassCard>
+
+      {/* Yo'l preview */}
+      <GlassCard>
+        <SectionHeader
+          title="Learning Path"
+          subtitle="Keyingi dars yo'l ustida ochiq"
+          action={<SecondaryActionButton onClick={() => setView('path')}>Yo'l</SecondaryActionButton>}
+        />
+        {firstLesson ? (
+          <button
+            type="button"
+            onClick={() => startLesson(firstLesson)}
+            className="mt-4 flex w-full items-center gap-4 rounded-2xl border-2 border-b-4 border-brand-600/25 bg-brand-50 p-4 text-left transition active:translate-y-[2px] active:border-b-2 dark:bg-brand-950/40"
+          >
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border-b-4 border-brand-800 bg-brand-600 text-white">
+              <Icon name="play" size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-base font-black">{firstLesson.title}</span>
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-400">{firstLesson.subtitle}</span>
+            </span>
+            <span className="shrink-0 text-sm font-black text-brand-600 dark:text-brand-300">+{firstLesson.xp} XP</span>
+          </button>
+        ) : null}
+      </GlassCard>
     </Screen>
   );
 }
 
-function MiniMetric({ label, value }: { label: string; value: string | number }) {
+function ActionTile({
+  icon,
+  tone,
+  title,
+  subtitle,
+  cta,
+  onClick,
+}: {
+  icon: 'cards' | 'book' | 'wrench';
+  tone: string;
+  title: string;
+  subtitle: string;
+  cta: string;
+  onClick: () => void;
+}) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-3 text-center dark:bg-slate-950">
-      <p className="text-[10px] font-bold text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-black">{value}</p>
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col rounded-2xl border-2 border-b-4 border-ink-900/[0.09] bg-white p-4 text-left shadow-hard transition hover:border-brand-600/30 active:translate-y-[2px] active:border-b-2 dark:border-white/[0.09] dark:bg-ink-800 dark:shadow-hard-dark"
+    >
+      <span className={`grid h-11 w-11 place-items-center rounded-xl ${tone}`}>
+        <Icon name={icon} size={22} />
+      </span>
+      <span className="mt-3 text-base font-black">{title}</span>
+      <span className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">{subtitle}</span>
+      <span className="mt-3 text-xs font-black uppercase tracking-wide text-brand-600 dark:text-brand-400">{cta} →</span>
+    </button>
+  );
+}
+
+function Metric({ value, label }: { value: string | number; label: string }) {
+  return (
+    <div className="rounded-2xl border-2 border-ink-900/[0.07] bg-white p-3 text-center shadow-hard dark:border-white/[0.07] dark:bg-ink-800 dark:shadow-hard-dark">
+      <p className="text-xl font-black">{value}</p>
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
     </div>
   );
 }
