@@ -40,6 +40,8 @@ export interface Word {
   id: string;
   russian: string;
   uzbek: string;
+  /** Tarjimaning lotin yozuvi (kirilldan avtomatik transliteratsiya) */
+  uzbek_latin?: string;
   category: Category;
   category_ru: string;
   page: number;
@@ -112,6 +114,8 @@ export interface Settings {
     pronunciation: boolean;
     autoPlay: boolean;
     speed: 'slow' | 'normal' | 'fast';
+    /** Dars ichidagi to'g'ri/xato feedback ovozlari */
+    effects: boolean;
   };
   appearance: {
     theme: 'light' | 'dark' | 'system';

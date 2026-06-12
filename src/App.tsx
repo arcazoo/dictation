@@ -98,7 +98,6 @@ export default function App() {
           words={data.words}
           progress={data.progress}
           settings={data.settings}
-          hearts={data.userProfile.hearts}
           reviewWord={data.reviewWord}
           onFinish={async (summary) => {
             const lessonProgress: LessonProgress = {
@@ -175,6 +174,8 @@ export default function App() {
         <SettingsPage
           settings={data.settings}
           updateSettings={data.updateSettings}
+          profile={data.userProfile}
+          updateProfile={data.updateProfile}
           exportData={data.exportData}
           importData={data.importData}
           clearProgress={data.clearProgress}
@@ -183,6 +184,7 @@ export default function App() {
           reload={data.reload}
           syncStatus={data.syncStatus}
           lastSyncedAt={data.lastSyncedAt}
+          syncNow={data.syncNow}
         />
       ) : null}
     </Layout>

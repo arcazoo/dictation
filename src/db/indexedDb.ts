@@ -164,7 +164,9 @@ async function withStore<T>(storeName: StoreName, mode: IDBTransactionMode, call
  */
 export async function seedDatabase() {
   const existing = await getWords();
-  if (existing.length >= 2900) return;
+  // uzbek_latin maydoni yo'q bo'lsa — bu eski (tozalanmagan) baza, yangilaymiz
+  const isCleanData = existing.length >= 2900 && existing.slice(0, 50).some((word) => word.uzbek_latin);
+  if (isCleanData) return;
 
   let words: Word[] = [];
   try {
@@ -178,7 +180,7 @@ export async function seedDatabase() {
     const module = await import('../data/seedWords');
     words = module.SEED_WORDS;
   }
-  if (!words.length || words.length < existing.length) return;
+  if (!words.length) return;
 
   await withStore('words', 'readwrite', async (store) => {
     await requestToPromise(store.clear());

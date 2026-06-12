@@ -74,17 +74,15 @@ export function updateProfileForExercise(
       : profile.last_active_date === yesterday
         ? profile.streak + 1
         : 1;
-  const wrong = result === 'wrong' || result === 'unknown';
-  const hearts = profile.hearts_enabled && wrong ? Math.max(0, profile.hearts - 1) : profile.hearts;
   const total_xp = profile.total_xp + xp;
 
+  // Yurak tizimi ishlatilmaydi — xato javob hech narsani bloklamaydi
   return {
     ...profile,
     total_xp,
     level: levelFromXp(total_xp),
     streak,
     last_active_date: today,
-    hearts,
   };
 }
 

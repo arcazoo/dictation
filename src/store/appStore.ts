@@ -91,6 +91,7 @@ export interface AppStore extends AppState {
   saveLessonResult: (lesson: LessonProgress, results: ExerciseResult[]) => Promise<void>;
   saveGrammarResult: (progress: GrammarProgress, xp: number) => Promise<void>;
   updateSettings: (settings: Settings) => Promise<void>;
+  updateProfile: (profile: UserProfile) => Promise<void>;
   resetAllSettings: () => Promise<Settings>;
   clearMistakes: () => Promise<void>;
   clearAllProgress: () => Promise<void>;
@@ -336,6 +337,12 @@ export const useAppStore = create<AppStore>((set, get) => {
     updateSettings: async (settings) => {
       await saveSettings(settings);
       set({ settings });
+      scheduleSync();
+    },
+
+    updateProfile: async (profile) => {
+      await saveUserProfile(profile);
+      set({ userProfile: profile });
       scheduleSync();
     },
 

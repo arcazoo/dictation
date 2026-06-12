@@ -64,7 +64,7 @@ export function StatsPage({
         <StatCard label="Mastered" value={mastered} tone="violet" />
         <StatCard label="Bugun" value={`${stats.todayCount} javob`} tone="amber" />
         <StatCard label="Jami javoblar" value={totalAnswers} tone="sky" />
-        <StatCard label="Hearts" value={`${profile.hearts}/5`} tone="rose" />
+        <StatCard label="Kunlik maqsad" value={`${dailyPercent}%`} tone="rose" />
       </section>
 
       <GlassCard>

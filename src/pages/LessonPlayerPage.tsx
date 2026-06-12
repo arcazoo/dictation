@@ -1,20 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AudioButton } from '../components/ai/AudioButton';
 import { PrimaryActionButton, SecondaryActionButton } from '../components/ui/ActionButtons';
 import { ConfettiLayer } from '../components/ui/ConfettiLayer';
 import { GlassCard } from '../components/ui/GlassCard';
+import { Icon } from '../components/ui/icons';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Screen } from '../components/ui/Screen';
 import { gradeWrittenAnswer } from '../lib/answer';
 import { buildExercisesForLesson, isChoiceExercise } from '../lib/exercises';
 import { makeExerciseResult, xpForResult } from '../lib/gamification';
+import { playCombo, playCorrect, playFinish, playWrong } from '../lib/sound';
 import type { AnswerQuality, Exercise, ExerciseResult, LearningLesson, Settings, UserProgress, Word } from '../types';
+
+const MAX_EXERCISES = 20;
+const MAX_RETRIES_PER_EXERCISE = 2;
+
+type Phase = 'playing' | 'summary';
 
 export function LessonPlayerPage({
   lesson,
   words,
   progress,
-  hearts,
+  settings,
   reviewWord,
   onFinish,
 }: {
@@ -22,25 +29,39 @@ export function LessonPlayerPage({
   words: Word[];
   progress: Record<string, UserProgress>;
   settings: Settings;
-  hearts: number;
   reviewWord: (word: Word, result: AnswerQuality, mode: 'multipleChoice' | 'written', responseMs?: number) => Promise<void>;
   onFinish: (summary: { score: number; xp: number; mistakes: number; results: ExerciseResult[] }) => Promise<void>;
 }) {
   const lessonWords = useMemo(() => words.filter((word) => lesson.wordIds.includes(word.id)).slice(0, 12), [lesson.wordIds, words]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- progress ataylab dependency emas: mashqlar dars boshida bir marta tuziladi
-  const exercises = useMemo(() => buildExercisesForLesson(lesson.id, lessonWords, words, progress), [lesson.id, lessonWords, words]);
+  const initialQueue = useMemo(
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mashqlar dars boshida bir marta tuziladi
+    () => buildExercisesForLesson(lesson.id, lessonWords, words, progress).slice(0, MAX_EXERCISES),
+    [lesson.id, lessonWords, words],
+  );
+
+  const [queue, setQueue] = useState<Exercise[]>(initialQueue);
   const [index, setIndex] = useState(0);
+  const [phase, setPhase] = useState<Phase>('playing');
   const [answer, setAnswer] = useState('');
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<{ quality: AnswerQuality; message: string; correctAnswer: string } | null>(null);
   const [startedAt, setStartedAt] = useState(Date.now());
   const [results, setResults] = useState<ExerciseResult[]>([]);
-  const [completed, setCompleted] = useState(false);
-  const exercise = exercises[index];
-  const progressPercent = exercises.length ? Math.round((index / exercises.length) * 100) : 0;
-  const score = results.filter((item) => item.result === 'correct').length;
-  const mistakes = results.filter((item) => item.result === 'wrong').length;
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const retryCountRef = useRef<Record<string, number>>({});
+  const lessonStartRef = useRef(Date.now());
+
+  const exercise = queue[index];
+  // Retry qo'shilsa navbat uzayadi — progress ham mos ravishda surilib boradi (Duolingo'dagidek)
+  const progressPercent = queue.length ? Math.round((index / queue.length) * 100) : 0;
+  const correctCount = results.filter((item) => item.result === 'correct').length;
+  const wrongCount = results.filter((item) => item.result === 'wrong').length;
   const totalXp = results.reduce((sum, item) => sum + item.xp_earned, 0);
+
+  function baseIdOf(item: Exercise) {
+    return item.id.split('::retry')[0];
+  }
 
   async function check() {
     if (!exercise || feedback) return;
@@ -49,7 +70,7 @@ export function LessonPlayerPage({
     const quality = gradeExercise(exercise, candidate);
     const xp = xpForResult(quality, progress[exercise.word.id]);
     const result = makeExerciseResult({
-      exerciseId: exercise.id,
+      exerciseId: `${exercise.id}-${Date.now()}`,
       lessonId: lesson.id,
       wordId: exercise.word.id,
       type: exercise.type,
@@ -59,30 +80,50 @@ export function LessonPlayerPage({
     });
     await reviewWord(exercise.word, quality, isChoiceExercise(exercise.type) ? 'multipleChoice' : 'written', responseMs);
     setResults((current) => [...current, result]);
+
+    const soundOn = settings.sound?.effects !== false;
+    if (quality === 'wrong') {
+      if (soundOn) playWrong();
+      setCombo(0);
+      // Duolingo-mexanika: xato mashq navbat oxiriga qaytadi
+      const baseId = baseIdOf(exercise);
+      const retries = retryCountRef.current[baseId] ?? 0;
+      if (retries < MAX_RETRIES_PER_EXERCISE) {
+        retryCountRef.current[baseId] = retries + 1;
+        setQueue((current) => [...current, { ...exercise, id: `${baseId}::retry${retries + 1}` }]);
+      }
+    } else {
+      const nextCombo = combo + 1;
+      setCombo(nextCombo);
+      setBestCombo((current) => Math.max(current, nextCombo));
+      if (soundOn) {
+        if (nextCombo > 0 && nextCombo % 5 === 0) playCombo();
+        else playCorrect();
+      }
+    }
+
     setFeedback({
       quality,
       correctAnswer: exercise.correctAnswer,
-      message: quality === 'correct' ? "Zo'r, to'g'ri!" : quality === 'close' ? "Yaqin. Bitta joyini charxlaymiz." : "Noto'g'ri, lekin shu yerda tuzatamiz.",
+      message:
+        quality === 'correct'
+          ? combo + 1 >= 3
+            ? `Zo'r! ${combo + 1} ta ketma-ket! 🔥`
+            : "To'g'ri! ✓"
+          : quality === 'close'
+            ? 'Juda yaqin — imloga e’tibor bering.'
+            : "Noto'g'ri. Bu mashq oxirida yana keladi.",
     });
   }
 
   function skipIntro() {
-    // Tanishtirish bosqichi baholanmaydi — shunchaki keyingisiga o'tamiz
-    void next();
+    advance();
   }
 
-  async function next() {
-    if (index + 1 >= exercises.length) {
-      const finalResults = results;
-      const finalMistakes = finalResults.filter((item) => item.result === 'wrong').length;
-      const finalXp = finalResults.reduce((sum, item) => sum + item.xp_earned, 0) + (finalMistakes === 0 ? 20 : 0);
-      setCompleted(true);
-      await onFinish({
-        score: finalResults.filter((item) => item.result === 'correct').length,
-        xp: finalXp,
-        mistakes: finalMistakes,
-        results: finalResults,
-      });
+  function advance() {
+    if (index + 1 >= queue.length) {
+      if (settings.sound?.effects !== false) playFinish();
+      setPhase('summary');
       return;
     }
     setIndex((value) => value + 1);
@@ -92,38 +133,85 @@ export function LessonPlayerPage({
     setStartedAt(Date.now());
   }
 
+  async function finishLesson() {
+    await onFinish({
+      score: correctCount,
+      xp: totalXp + (wrongCount === 0 && results.length > 0 ? 20 : 0),
+      mistakes: wrongCount,
+      results,
+    });
+  }
+
+  // ======================= NATIJA =======================
+  if (phase === 'summary') {
+    const total = results.length;
+    const accuracy = total ? Math.round((correctCount / total) * 100) : 0;
+    const seconds = Math.round((Date.now() - lessonStartRef.current) / 1000);
+    const perfect = wrongCount === 0 && total > 0;
+    const finalXp = totalXp + (perfect ? 20 : 0);
+    return (
+      <Screen className="max-w-md">
+        <div className="relative">
+          <ConfettiLayer active />
+          <GlassCard className="text-center">
+            <span
+              className={`mx-auto grid h-16 w-16 place-items-center rounded-2xl border-b-4 text-white ${
+                perfect ? 'border-warn-600 bg-warn-500' : 'border-success-800 bg-success-600'
+              }`}
+            >
+              <Icon name={perfect ? 'trophy' : 'check'} size={30} />
+            </span>
+            <h1 className="mt-4 text-2xl font-black">{perfect ? 'Mukammal dars! 🎉' : 'Dars tugadi!'}</h1>
+            <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">{lesson.title}</p>
+
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              <SummaryStat label="XP" value={`+${finalXp}`} tone="text-brand-600 bg-brand-50 dark:bg-brand-950/60 dark:text-brand-300" />
+              <SummaryStat label="Aniqlik" value={`${accuracy}%`} tone="text-success-700 bg-success-100 dark:bg-success-700/20 dark:text-success-500" />
+              <SummaryStat label="Vaqt" value={`${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`} tone="text-violet-600 bg-violet-100/70 dark:bg-violet-950/60 dark:text-violet-300" />
+            </div>
+            {bestCombo >= 3 ? (
+              <p className="mt-3 text-sm font-black text-warn-600">🔥 Eng yaxshi seriya: {bestCombo} ta ketma-ket</p>
+            ) : null}
+            {perfect ? <p className="mt-2 text-xs font-black uppercase tracking-wide text-warn-600">+20 XP perfect bonus</p> : null}
+
+            <PrimaryActionButton className="mt-6 w-full" onClick={() => void finishLesson()}>
+              Davom etish
+            </PrimaryActionButton>
+          </GlassCard>
+        </div>
+      </Screen>
+    );
+  }
+
   if (!exercise) {
     return (
       <Screen>
-        <GlassCard>Bu lesson uchun mashqlar topilmadi. Boshqa lesson tanlang.</GlassCard>
+        <GlassCard>Bu dars uchun mashqlar topilmadi. Boshqa dars tanlang.</GlassCard>
       </Screen>
     );
   }
 
   const canCheck = Boolean(answer || selectedTokens.length);
+  const isRetry = exercise.id.includes('::retry');
 
   return (
-    <Screen className="max-w-4xl">
+    <Screen className="max-w-2xl">
       <div className="sticky top-0 z-20 -mx-3 bg-[#f4f5fb]/92 px-3 py-3 backdrop-blur-md dark:bg-ink-950/92 lg:top-5 lg:mx-0 lg:rounded-2xl lg:border-2 lg:border-ink-900/[0.07] lg:bg-white lg:shadow-hard dark:lg:border-white/[0.07] dark:lg:bg-ink-800">
         <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black">{lesson.title}</p>
-                <p className="text-xs font-bold text-slate-500">{index + 1}/{exercises.length} · {lesson.subtitle}</p>
-              </div>
-              <span className="rounded-xl border-2 border-danger-500/25 bg-danger-100/60 px-3 py-1.5 text-xs font-black text-danger-700 dark:bg-rose-950/60 dark:text-rose-200">♥ {Math.max(0, hearts)}</span>
-            </div>
-            <ProgressBar value={progressPercent} className="mt-3" />
-          </div>
+          <ProgressBar value={progressPercent} className="flex-1" tone={combo >= 3 ? 'amber' : 'brand'} />
+          {combo >= 2 ? <span className="shrink-0 text-sm font-black text-warn-600">🔥{combo}</span> : null}
+          <span className="shrink-0 text-xs font-black text-slate-400">
+            {Math.min(index + 1, queue.length)}/{queue.length}
+          </span>
         </div>
       </div>
 
-      <GlassCard className="relative overflow-hidden">
-        <ConfettiLayer active={completed || feedback?.quality === 'correct'} />
+      <GlassCard className={feedback?.quality === 'wrong' ? 'animate-shake' : 'animate-slide-up'} key={exercise.id}>
         <div className="rounded-2xl border-2 border-ink-900/10 bg-gradient-to-br from-brand-600 to-violet-600 p-5 text-white dark:border-white/10">
           <div className="flex items-center justify-between gap-3">
-            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase">{exerciseTypeLabel(exercise.type)}</span>
+            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase">
+              {isRetry ? 'Qayta urinish' : exerciseTypeLabel(exercise.type)}
+            </span>
             <AudioButton text={exercise.word.russian} />
           </div>
           {exercise.type === 'introduce' ? (
@@ -138,9 +226,8 @@ export function LessonPlayerPage({
               ) : null}
             </div>
           ) : (
-            <h1 className="mt-5 text-3xl font-black leading-tight">{exercise.prompt}</h1>
+            <h1 className="mt-5 text-2xl font-black leading-tight sm:text-3xl">{exercise.prompt}</h1>
           )}
-          <p className="mt-3 text-sm font-bold opacity-75">{exercise.word.category_ru} / {exercise.word.page}-varaq</p>
         </div>
 
         {exercise.type !== 'introduce' ? (
@@ -148,16 +235,18 @@ export function LessonPlayerPage({
             {exercise.choices ? (
               <ChoiceGrid exercise={exercise} answer={answer} feedback={feedback} setAnswer={setAnswer} />
             ) : exercise.tokens ? (
-              <TokenBuilder
-                exercise={exercise}
-                selectedTokens={selectedTokens}
-                setSelectedTokens={setSelectedTokens}
-              />
+              <TokenBuilder exercise={exercise} selectedTokens={selectedTokens} setSelectedTokens={setSelectedTokens} />
             ) : (
               <textarea
                 value={answer}
                 onChange={(event) => setAnswer(event.target.value)}
-                className="min-h-32 w-full resize-none rounded-2xl border-2 border-ink-900/12 bg-white px-5 py-4 text-lg font-bold outline-none transition focus:border-brand-500 dark:border-white/12 dark:bg-ink-900"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void check();
+                  }
+                }}
+                className="min-h-28 w-full resize-none rounded-2xl border-2 border-ink-900/12 bg-white px-5 py-4 text-lg font-bold outline-none transition focus:border-brand-500 dark:border-white/12 dark:bg-ink-900"
                 placeholder="Javobni yozing..."
               />
             )}
@@ -172,18 +261,29 @@ export function LessonPlayerPage({
           <PrimaryActionButton className="w-full" onClick={skipIntro}>
             Tushundim, davom etamiz
           </PrimaryActionButton>
+        ) : feedback === null ? (
+          <PrimaryActionButton className="w-full" disabled={!canCheck} onClick={() => void check()}>
+            Tekshirish
+          </PrimaryActionButton>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <PrimaryActionButton disabled={feedback !== null || !canCheck} onClick={check}>
-              Tekshirish
-            </PrimaryActionButton>
-            <SecondaryActionButton disabled={!feedback} onClick={next}>
-              Davom etish
-            </SecondaryActionButton>
-          </div>
+          <PrimaryActionButton
+            className={`w-full ${feedback.quality === 'wrong' ? '!border-danger-800 !bg-danger-600' : '!border-success-800 !bg-success-600'}`}
+            onClick={advance}
+          >
+            Davom etish
+          </PrimaryActionButton>
         )}
       </div>
     </Screen>
+  );
+}
+
+function SummaryStat({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div className={`rounded-2xl border-2 border-ink-900/[0.07] p-3 dark:border-white/[0.07] ${tone}`}>
+      <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{label}</p>
+      <p className="mt-1 text-xl font-black">{value}</p>
+    </div>
   );
 }
 
@@ -199,7 +299,7 @@ function ChoiceGrid({
   setAnswer: (value: string) => void;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       {exercise.choices?.map((choice) => {
         const selected = answer === choice;
         const correct = feedback && choice === exercise.correctAnswer;
@@ -255,7 +355,7 @@ function TokenBuilder({
         ))}
       </div>
       <SecondaryActionButton className="mt-4" onClick={() => setSelectedTokens([])}>
-        Reset
+        Tozalash
       </SecondaryActionButton>
     </div>
   );
@@ -269,9 +369,13 @@ function FeedbackPanel({ feedback }: { feedback: { quality: AnswerQuality; messa
         ? 'border-warn-500/40 bg-warn-100 text-warn-800 dark:bg-amber-950/50 dark:text-amber-200'
         : 'border-danger-600/40 bg-danger-100 text-danger-800 dark:bg-danger-700/20 dark:text-danger-500';
   return (
-    <div className={`mt-5 rounded-2xl border-2 p-4 font-bold ${tone}`}>
+    <div className={`mt-5 animate-slide-up rounded-2xl border-2 p-4 font-bold ${tone}`}>
       <p className="text-lg font-black">{feedback.message}</p>
-      <p className="mt-2 text-sm">To'g'ri javob: <span className="font-black">{feedback.correctAnswer}</span></p>
+      {feedback.quality !== 'correct' ? (
+        <p className="mt-2 text-sm">
+          To'g'ri javob: <span className="font-black">{feedback.correctAnswer}</span>
+        </p>
+      ) : null}
     </div>
   );
 }

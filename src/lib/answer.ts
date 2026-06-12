@@ -71,7 +71,7 @@ function levenshtein(a: string, b: string) {
 
 export function gradeWrittenAnswer(input: string, expected: string): AnswerQuality {
   const cleanInput = normalizeAnswer(input);
-  const expectedOptions = expected.split(/[,/;]/).map(normalizeAnswer).filter(Boolean);
+  const expectedOptions = expected.split(/[,/;·]/).map(normalizeAnswer).filter(Boolean);
   const candidates = [cleanInput, toUzCyrillic(cleanInput)];
 
   if (expectedOptions.some((answer) => candidates.includes(answer) || candidates.includes(toUzCyrillic(answer)))) {

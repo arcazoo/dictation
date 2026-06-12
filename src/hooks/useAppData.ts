@@ -29,13 +29,24 @@ export function useAppData() {
     root.classList.add(`text-size-${store.settings.appearance?.fontSize ?? 'medium'}`);
   }, [store.settings]);
 
+  // Yozuv rejimi: tarjimalarni lotin/kirill/ikkalasida ko'rsatish
+  const words = useMemo(() => {
+    const script = store.settings.translationScript ?? 'latin';
+    if (script === 'cyrillic') return store.words;
+    return store.words.map((word) => {
+      if (!word.uzbek_latin) return word;
+      if (script === 'latin') return { ...word, uzbek: word.uzbek_latin };
+      return { ...word, uzbek: `${word.uzbek_latin} · ${word.uzbek}` };
+    });
+  }, [store.words, store.settings.translationScript]);
+
   const stats = useMemo(
-    () => computeStats({ progress: store.progress, events: store.events, words: store.words }),
-    [store.progress, store.events, store.words],
+    () => computeStats({ progress: store.progress, events: store.events, words }),
+    [store.progress, store.events, words],
   );
 
   return {
-    words: store.words,
+    words,
     progress: store.progress,
     settings: store.settings,
     events: store.events,
@@ -54,6 +65,8 @@ export function useAppData() {
     reload: store.reload,
     reviewWord: store.reviewWord,
     updateSettings: store.updateSettings,
+    updateProfile: store.updateProfile,
+    syncNow: store.syncSoon,
     exportData: store.exportAll,
     importData: store.importAll,
     clearProgress: store.clearAllProgress,

@@ -223,7 +223,7 @@ export const MODULE_10: GrammarTopic[] = [
       "O'zbek tilida aynan mos yuklamalar bor: '-ku' = же, 'axir' = ведь, 'nahotki' = неужели/разве, '-chi' = -ка. Ayt-chi = скажи-ка, bilarding-ku = ты же знал. Bu mosliklar tufayli C1 yuklamalari o'zbeklar uchun oson!",
     examples: [
       { ru: 'Ра́зве ты не слы́шал но́вость?', uz: 'Nahotki yangilikni eshitmagan bo‘lsang?' },
-      { ru: 'Неуже́ли э́то всё бесп́латно?!', uz: 'Nahotki bularning hammasi bepul?!' },
+      { ru: 'Неуже́ли э́то всё беспла́тно?!', uz: 'Nahotki bularning hammasi bepul?!' },
       { ru: 'Я же тебе́ говори́л!', uz: 'Men senga aytgandim-ku!' },
       { ru: 'Не волну́йся, ведь всё хорошо́.', uz: 'Xavotir olma, axir hammasi yaxshi.' },
       { ru: 'Расскажи́-ка, что случи́лось.', uz: 'Aytib ber-chi, nima bo‘ldi.' },

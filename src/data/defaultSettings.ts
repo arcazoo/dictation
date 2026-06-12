@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: Settings = {
     onlyMistakes: false,
   },
   language: 'uz_latin',
-  translationScript: 'both',
+  translationScript: 'latin',
   difficulty: 'normal',
   lessonOrder: 'mixed',
   notifications: {
@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
     pronunciation: true,
     autoPlay: false,
     speed: 'normal',
+    effects: true,
   },
   appearance: {
     theme: 'system',

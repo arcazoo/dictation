@@ -70,12 +70,39 @@ export function getCategoryProgress(words: Word[], progress: Record<string, User
   return Math.round((learned.length / categoryWords.length) * 100);
 }
 
+/**
+ * Duolingo-uslubidagi aqlli distraktorlar: tasodifiy emas, javobga o'xshash
+ * so'zlar tanlanadi (bir kategoriya, o'xshash uzunlik, umumiy boshlanish).
+ */
 export function getChoices(word: Word, words: Word[], reverse = false) {
   const answer = reverse ? word.russian : word.uzbek;
-  const pool = words
-    .filter((item) => item.id !== word.id)
-    .map((item) => (reverse ? item.russian : item.uzbek))
-    .filter((value, index, list) => value && list.indexOf(value) === index);
-  const distractors = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+  const seen = new Set<string>([answer.toLowerCase()]);
+  const candidates: Array<{ value: string; score: number }> = [];
+
+  for (const item of words) {
+    if (item.id === word.id) continue;
+    const value = reverse ? item.russian : item.uzbek;
+    const key = value?.toLowerCase();
+    if (!value || !key || seen.has(key)) continue;
+    seen.add(key);
+
+    let score = Math.random() * 2; // ozgina tasodif — har safar bir xil bo'lmasin
+    if (item.category === word.category) score += 3;
+    const lengthDiff = Math.abs(value.length - answer.length);
+    score += Math.max(0, 4 - lengthDiff);
+    if (key[0] === answer[0]?.toLowerCase()) score += 3;
+    if (key.slice(0, 2) === answer.slice(0, 2).toLowerCase()) score += 2;
+    if (key.slice(-2) === answer.slice(-2).toLowerCase()) score += 1.5;
+    candidates.push({ value, score });
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  // Eng o'xshash 10 tadan 3 tasini tasodifiy olamiz
+  const top = candidates.slice(0, 10);
+  const distractors: string[] = [];
+  while (distractors.length < 3 && top.length) {
+    const index = Math.floor(Math.random() * top.length);
+    distractors.push(top.splice(index, 1)[0].value);
+  }
   return [...distractors, answer].sort(() => Math.random() - 0.5);
 }

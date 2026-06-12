@@ -139,7 +139,7 @@ export const MODULE_9: GrammarTopic[] = [
       "O'zbek tilida son o'zgarmaydi ('ikki do'st bilan'), rus tilida esa son ham kelishik oladi: с двумя друзьями. Bu B2 darajaning eng mexanik yodlanadigan mavzusi.",
     examples: [
       { ru: 'Я пришёл с двумя́ друзья́ми.', uz: "Ikki do'stim bilan keldim." },
-      { ru: 'В за́ле о́коло пяти́ст челове́к.', uz: 'Zalda besh yuzga yaqin odam bor.' },
+      { ru: 'В за́ле о́коло пятисо́т челове́к.', uz: 'Zalda besh yuzga yaqin odam bor.' },
       { ru: 'Он говори́л о трёх пробле́мах.', uz: 'U uchta muammo haqida gapirdi.' },
       { ru: 'Обе́ими рука́ми держи́сь!', uz: 'Ikkala qo‘l bilan ushlan!' },
       { ru: 'Э́то случи́лось в две ты́сячи деся́том году́.', uz: 'Bu 2010-yilda sodir bo‘lgan.' },

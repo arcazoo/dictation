@@ -1,6 +1,6 @@
 import { CATEGORIES } from '../data/categories';
 import { getCategoryProgress, getDueWords, getTodayLesson } from '../lib/lesson';
-import { HeartBadge, LevelBadge, StreakBadge, XPBadge } from '../components/ui/Badges';
+import { LevelBadge, StreakBadge, XPBadge } from '../components/ui/Badges';
 import { PrimaryActionButton, SecondaryActionButton } from '../components/ui/ActionButtons';
 import { GradientCard } from '../components/ui/GradientCard';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -50,11 +50,10 @@ export function TodayPage({
   return (
     <Screen>
       {/* Profil chizig'i */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2">
         <StreakBadge value={`${profile.streak} kun`} />
         <XPBadge value={profile.total_xp} />
         <LevelBadge value={profile.level} />
-        <HeartBadge value={profile.hearts_enabled ? `${profile.hearts}/5` : 'off'} />
       </div>
 
       {/* Hero */}
