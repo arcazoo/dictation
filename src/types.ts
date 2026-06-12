@@ -266,3 +266,34 @@ export interface Exercise {
   sentence?: string;
   blank?: string;
 }
+
+export type GrammarLevel = 'beginner' | 'elementary' | 'intermediate';
+export type GrammarExerciseType = 'choose' | 'fillBlank' | 'transform' | 'translate';
+
+export interface GrammarExercise {
+  id: string;
+  type: GrammarExerciseType;
+  prompt: string;
+  answer: string;
+  choices?: string[];
+  explanation_uz: string;
+}
+
+export interface GrammarTopic {
+  id: string;
+  title: string;
+  subtitle: string;
+  level: GrammarLevel;
+  category: 'foundation' | 'nouns' | 'verbs' | 'sentence' | 'cases' | 'speech';
+  rule_uz: string;
+  examples: Array<{ ru: string; uz: string; note?: string }>;
+  exercises: GrammarExercise[];
+}
+
+export interface LearningMethod {
+  id: string;
+  title: string;
+  goal: string;
+  steps: string[];
+  bestFor: string;
+}

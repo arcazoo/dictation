@@ -5,6 +5,7 @@ import { buildLearningPath } from './lib/adaptiveLesson';
 import { ErrorsPage } from './pages/ErrorsPage';
 import { LearningPathPage } from './pages/LearningPathPage';
 import { LessonPlayerPage } from './pages/LessonPlayerPage';
+import { GrammarPage } from './pages/GrammarPage';
 import { SectionsPage } from './pages/SectionsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
@@ -14,7 +15,7 @@ import { TodayPage } from './pages/TodayPage';
 import { TutorPage } from './pages/TutorPage';
 import type { LearningLesson, LessonProgress, StudySource } from './types';
 
-const views: View[] = ['today', 'path', 'lesson', 'sections', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
+const views: View[] = ['today', 'path', 'lesson', 'sections', 'grammar', 'study', 'test', 'ai', 'errors', 'stats', 'settings'];
 
 function getHashView(): View {
   const hash = window.location.hash.replace('#', '') as View;
@@ -26,6 +27,7 @@ export default function App() {
   const [view, setViewState] = useState<View>(getHashView());
   const [studySource, setStudySource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
   const [testSource, setTestSource] = useState<StudySource>({ kind: 'today', title: 'Bugungi dars' });
+  const [aiDraft, setAiDraft] = useState('');
   const [activeLesson, setActiveLesson] = useState<LearningLesson | null>(null);
 
   useEffect(() => {
@@ -47,6 +49,11 @@ export default function App() {
   const startTest = (source: StudySource) => {
     setTestSource(source);
     setView('test');
+  };
+
+  const openAiWithPrompt = (prompt: string) => {
+    setAiDraft(prompt);
+    setView('ai');
   };
 
   const units = buildLearningPath(data.words, data.progress, data.lessonProgress ?? {});
@@ -115,6 +122,7 @@ export default function App() {
       {view === 'sections' ? (
         <SectionsPage words={data.words} progress={data.progress} startStudy={startStudy} startTest={startTest} />
       ) : null}
+      {view === 'grammar' ? <GrammarPage openAi={openAiWithPrompt} /> : null}
       {view === 'study' ? (
         <StudyPage
           words={data.words}
@@ -144,6 +152,8 @@ export default function App() {
           addTutorMessage={data.addTutorMessage}
           clearTutorChat={data.clearTutorChat}
           addSpeakingAttempt={data.addSpeakingAttempt}
+          draftPrompt={aiDraft}
+          clearDraftPrompt={() => setAiDraft('')}
         />
       ) : null}
       {view === 'errors' ? (

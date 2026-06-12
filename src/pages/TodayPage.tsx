@@ -29,7 +29,7 @@ export function TodayPage({
   settings: Settings;
   learned: number;
   accuracy: number;
-  setView: (view: 'study' | 'sections' | 'ai' | 'path') => void;
+  setView: (view: 'study' | 'sections' | 'ai' | 'path' | 'grammar') => void;
   startStudy: (source: StudySource) => void;
   startTest: (source: StudySource) => void;
   startLesson: (lesson: LearningLesson) => void;
@@ -145,6 +145,13 @@ export function TodayPage({
             <SectionHeader title="Mistake Repair" subtitle={`${mistakes} ta xato so'z bor`} />
             <PrimaryActionButton className="mt-4 w-full" onClick={() => startStudy({ kind: 'mistakes', title: "Xato so'zlar" })}>
               Xatolarni tuzatish
+            </PrimaryActionButton>
+          </GlassCard>
+
+          <GlassCard>
+            <SectionHeader title="Grammar Lab" subtitle="Qoidalar, misollar va drill mashqlar." />
+            <PrimaryActionButton className="mt-4 w-full" onClick={() => setView('grammar')}>
+              Grammatikani o'rganish
             </PrimaryActionButton>
           </GlassCard>
         </div>

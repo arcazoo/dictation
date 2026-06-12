@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { AppShell } from './ui/AppShell';
 import type { NavItem } from './ui/BottomNav';
 
-export type View = 'today' | 'path' | 'lesson' | 'sections' | 'study' | 'test' | 'ai' | 'errors' | 'stats' | 'settings';
+export type View = 'today' | 'path' | 'lesson' | 'sections' | 'grammar' | 'study' | 'test' | 'ai' | 'errors' | 'stats' | 'settings';
 
 const navItems: NavItem[] = [
   { id: 'today', label: 'Bugun', short: 'Bugun', icon: 'B' },
@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
 
 const desktopItems: NavItem[] = [
   ...navItems,
+  { id: 'grammar', label: 'Grammar Lab', short: 'Grammar', icon: 'G' },
   { id: 'study', label: 'Flashcard', short: 'Cards', icon: 'F' },
   { id: 'test', label: 'Test', short: 'Test', icon: 'T' },
   { id: 'errors', label: 'Mistake Repair', short: 'Xato', icon: 'X' },
